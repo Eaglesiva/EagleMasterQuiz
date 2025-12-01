@@ -2,24 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EAGLE Master Quiz Builder</title>
+  <title>EAGLE Quiz Maker Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- 🦅 Favicon -->
+  <!-- 🦅 Favicon (optional – you can change URL) -->
   <link rel="icon" href="https://raw.githubusercontent.com/Eaglesiva/EagleMasterQuiz/main/favicon.png">
 
-  <!-- 🔍 SEO -->
-  <meta name="description" content="Create, save, preview & play quizzes — offline friendly online master quiz builder.">
-  <meta name="keywords" content="Quiz Builder, MCQ Generator, Quiz Maker, Online Test, Play Quiz, Education Tools">
+  <!-- 🔍 Basic SEO -->
+  <meta name="description" content="EAGLE Quiz Maker Pro – Create, import, preview and export powerful quiz apps from Google Sheets.">
+  <meta name="keywords" content="Quiz Maker, MCQ, Tamil Quiz, Google Sheet Quiz, Blogger Quiz, EAGLE Quiz Maker Pro">
   <meta name="author" content="Eagle">
-
-  <!-- 🌐 Social Preview -->
-  <meta property="og:title" content="EAGLE Master Quiz Builder">
-  <meta property="og:description" content="Create, preview, save & play quizzes — offline friendly master quiz web app.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/USERNAME/EagleMasterQuiz/main/social.png">
-  <meta property="og:url" content="https://USERNAME.github.io/EagleMasterQuiz/">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
 
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -29,24 +21,23 @@
       <div class="app-title">
         <span class="logo-icon">🦅</span>
         <div>
-          <h1>EAGLE Master Quiz Builder</h1>
-          <p>Create, save, preview & play quizzes – offline friendly</p>
+          <h1>EAGLE Quiz Maker Pro</h1>
+          <p>Create, import, preview & export quizzes – offline friendly</p>
         </div>
       </div>
-      <div style="display:flex; gap:6px;">
-        <a href="library.html" class="secondary-btn small">📚 Public Library</a>
+      <div style="display:flex; gap:6px; align-items:center;">
         <button id="themeToggle" class="ghost-btn">☀ / 🌙</button>
       </div>
     </header>
 
-        <main class="app-main">
+    <main class="app-main">
       <!-- LEFT: QUIZ EDITOR -->
       <section class="panel panel-editor">
         <h2>🛠 Create / Edit Quiz</h2>
 
         <label class="field">
           <span>Quiz Title</span>
-          <input id="quizTitle" type="text" placeholder="e.g. Tamil Grammar Test" />
+          <input id="quizTitle" type="text" placeholder="e.g. 6th Book Back Tamil Quiz" />
         </label>
 
         <label class="field">
@@ -54,7 +45,7 @@
           <textarea id="quizDescription" rows="2" placeholder="Short intro for this quiz..."></textarea>
         </label>
 
-        <!-- 🔹 NEW: Google Sheet ID input -->
+        <!-- Google Sheet ID -->
         <label class="field">
           <span>Google Sheet ID (for this quiz)</span>
           <input id="sheetId" type="text"
@@ -64,8 +55,49 @@
           </p>
         </label>
 
-        <!-- 🔹 NEW: Import from Sheet button -->
-        <div class="button-row" style="margin-top: 0;">
+        <!-- PLAYER SETTINGS -->
+        <section class="panel" style="margin-bottom:10px; padding:10px 10px 8px;">
+          <h2 style="margin-bottom:6px; font-size:0.85rem; letter-spacing:0.08em;">⚙ Player Settings</h2>
+
+          <div class="field">
+            <span>Timer</span>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <label style="font-size:0.8rem;">
+                <input id="timerEnabled" type="checkbox" checked />
+                Enable timer for each question
+              </label>
+              <input id="timerSeconds" type="number" min="5" max="300" value="20" style="max-width:80px;" />
+              <span style="font-size:0.75rem; color:#9ca3af;">seconds (default 20)</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <span>Voice (TTS)</span>
+            <label style="font-size:0.8rem;">
+              <input id="ttsEnabled" type="checkbox" checked />
+              Read question aloud (female Tamil voice, if available)
+            </label>
+          </div>
+
+          <div class="field">
+            <span>Sound Effects</span>
+            <select id="soundPack" style="max-width:180px;">
+              <option value="clap-pop" selected>👏 Clap / Pop (recommended)</option>
+              <option value="none">No sound</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <span>Question / Option Order</span>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:0.8rem;">
+              <label><input id="shuffleQuestions" type="checkbox" /> Shuffle questions</label>
+              <label><input id="shuffleOptions" type="checkbox" /> Shuffle options</label>
+            </div>
+          </div>
+        </section>
+
+        <!-- IMPORT FROM SHEET BUTTON -->
+        <div class="button-row" style="margin-top:0;">
           <button id="btnSheetImport" class="secondary-btn small">📥 Import from Google Sheet</button>
         </div>
 
@@ -84,14 +116,13 @@
           <button id="btnNew" class="ghost-btn small">🧹 New</button>
           <button id="btnSave" class="primary-btn">💾 Save Quiz</button>
           <button id="btnPreview" class="secondary-btn">👁 Preview</button>
-          <!-- 🔹 NEW: Export single-file quiz app -->
           <button id="btnExportStandalone" class="secondary-btn">⬇ Export Single HTML</button>
         </div>
 
         <p id="statusBar" class="status-bar">Ready.</p>
       </section>
 
-      <!-- RIGHT: QUIZ LIST (you can still use this, or ignore if you want 1-sheet = 1-quiz) -->
+      <!-- RIGHT: QUIZ LIST -->
       <section class="panel panel-list">
         <h2>📚 Saved Quizzes</h2>
         <div id="quizList" class="quiz-list">
@@ -104,10 +135,9 @@
         <input type="file" id="importFile" accept="application/json" hidden />
       </section>
     </main>
-
   </div>
 
-  <!-- 🔎 PREVIEW OVERLAY -->
+  <!-- PREVIEW OVERLAY -->
   <div id="previewOverlay" class="preview-overlay hidden">
     <div class="preview-dialog">
       <div class="preview-header">
@@ -126,4 +156,3 @@
   <script src="ui.js"></script>
 </body>
 </html>
-
