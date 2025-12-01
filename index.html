@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EAGLE Master Quiz Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="app-body">
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="app-title">
+        <span class="logo-icon">??</span>
+        <div>
+          <h1>EAGLE Master Quiz Builder</h1>
+          <p>Create, save, preview & play quizzes – offline friendly</p>
+        </div>
+      </div>
+      <button id="themeToggle" class="ghost-btn">? / ??</button>
+    </header>
+
+    <main class="app-main">
+      <!-- LEFT: QUIZ EDITOR -->
+      <section class="panel panel-editor">
+        <h2>?? Create / Edit Quiz</h2>
+
+        <label class="field">
+          <span>Quiz Title</span>
+          <input id="quizTitle" type="text" placeholder="e.g. General Knowledge Test" />
+        </label>
+
+        <label class="field">
+          <span>Quiz Description</span>
+          <textarea id="quizDescription" rows="2" placeholder="Short intro for this quiz..."></textarea>
+        </label>
+
+        <label class="field">
+          <span>Questions (one per line)</span>
+          <p class="help-text">
+            Format: <code>Question ? || Option A || Option B || Option C || Option D || correctOptionNumber</code><br />
+            Example: <br />
+            <code>What is 2+2? || 3 || 4 || 5 || 6 || 2</code>
+          </p>
+          <textarea id="quizQuestions" rows="8"
+            placeholder="What is 2+2? || 3 || 4 || 5 || 6 || 2&#10;Capital of India? || Delhi || Mumbai || Chennai || Kolkata || 1"></textarea>
+        </label>
+
+        <div class="button-row">
+          <button id="btnNew" class="ghost-btn small">?? New</button>
+          <button id="btnSave" class="primary-btn">?? Save Quiz</button>
+          <button id="btnPreview" class="secondary-btn">?? Preview</button>
+        </div>
+
+        <p id="statusBar" class="status-bar">Ready.</p>
+      </section>
+
+      <!-- RIGHT: QUIZ LIST -->
+      <section class="panel panel-list">
+        <h2>?? Saved Quizzes</h2>
+        <div id="quizList" class="quiz-list">
+          <!-- Filled by ui.js -->
+        </div>
+        <div class="button-row">
+          <button id="btnExport" class="secondary-btn small">?? Export JSON</button>
+          <button id="btnImport" class="ghost-btn small">?? Import JSON</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json" hidden />
+      </section>
+    </main>
+  </div>
+
+  <!-- PREVIEW OVERLAY -->
+  <div id="previewOverlay" class="preview-overlay hidden">
+    <div class="preview-dialog">
+      <div class="preview-header">
+        <h2>Quiz Preview</h2>
+        <button id="btnClosePreview" class="ghost-btn small">?</button>
+      </div>
+      <div id="previewContainer" class="preview-container">
+        <!-- player.js will render quiz here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="core.js"></script>
+  <script src="storage.js"></script>
+  <script src="player.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
