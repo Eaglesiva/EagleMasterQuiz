@@ -4,6 +4,13 @@
   const questionsEl = document.getElementById("quizQuestions");
   const sheetIdEl = document.getElementById("sheetId");
 
+  const timerEnabledEl = document.getElementById("timerEnabled");
+  const timerSecondsEl = document.getElementById("timerSeconds");
+  const ttsEnabledEl = document.getElementById("ttsEnabled");
+  const soundPackEl = document.getElementById("soundPack");
+  const shuffleQuestionsEl = document.getElementById("shuffleQuestions");
+  const shuffleOptionsEl = document.getElementById("shuffleOptions");
+
   const quizListEl = document.getElementById("quizList");
   const statusBar = document.getElementById("statusBar");
 
@@ -24,16 +31,47 @@
   let currentId = null;
 
   function setStatus(message) {
-    statusBar.textContent = message;
+    if (statusBar) statusBar.textContent = message;
   }
 
   function clearForm() {
     currentId = null;
-    titleEl.value = "";
-    descEl.value = "";
-    questionsEl.value = "";
-    sheetIdEl.value = "";
+    if (titleEl) titleEl.value = "";
+    if (descEl) descEl.value = "";
+    if (questionsEl) questionsEl.value = "";
+    if (sheetIdEl) sheetIdEl.value = "";
+    if (timerEnabledEl) timerEnabledEl.checked = true;
+    if (timerSecondsEl) timerSecondsEl.value = 20;
+    if (ttsEnabledEl) ttsEnabledEl.checked = true;
+    if (soundPackEl) soundPackEl.value = "clap-pop";
+    if (shuffleQuestionsEl) shuffleQuestionsEl.checked = false;
+    if (shuffleOptionsEl) shuffleOptionsEl.checked = false;
     setStatus("Cleared. Ready to create a new quiz.");
+  }
+
+  function getSettingsFromForm() {
+    const timerEnabled = timerEnabledEl ? timerEnabledEl.checked : true;
+    const timerSeconds = timerSecondsEl ? parseInt(timerSecondsEl.value || "20", 10) : 20;
+    const ttsEnabled = ttsEnabledEl ? ttsEnabledEl.checked : true;
+    const soundPack = soundPackEl ? soundPackEl.value : "clap-pop";
+    const shuffleQuestions = shuffleQuestionsEl ? shuffleQuestionsEl.checked : false;
+    const shuffleOptions = shuffleOptionsEl ? shuffleOptionsEl.checked : false;
+
+    return {
+      timer: {
+        enabled: !!timerEnabled,
+        seconds: isNaN(timerSeconds) ? 20 : timerSeconds,
+        style: "ring" // you chose ring
+      },
+      tts: {
+        enabled: !!ttsEnabled,
+        read: "question" // question only
+      },
+      sound: soundPack, // "clap-pop" or "none"
+      shuffleQuestions,
+      shuffleOptions,
+      theme: "dark"
+    };
   }
 
   function loadQuizzesList() {
@@ -60,7 +98,7 @@
       const meta = document.createElement("div");
       meta.className = "quiz-card-meta";
       const date = new Date(quiz.createdAt || Date.now());
-      const sheetInfo = quiz.sheetId ? ` · Sheet ID set` : "";
+      const sheetInfo = quiz.sheetId ? " · Sheet ID set" : "";
       meta.textContent = `${quiz.questions.length} Q · ${date.toLocaleString()}${sheetInfo}`;
 
       header.appendChild(title);
@@ -88,6 +126,13 @@
         window.open(url, "_blank");
       });
 
+      const btnExportSingle = document.createElement("button");
+      btnExportSingle.className = "secondary-btn small";
+      btnExportSingle.textContent = "⬇ Export HTML";
+      btnExportSingle.addEventListener("click", () => {
+        exportQuizAsSingleHtml(quiz);
+      });
+
       const btnDel = document.createElement("button");
       btnDel.className = "ghost-btn small";
       btnDel.textContent = "🗑 Delete";
@@ -97,13 +142,6 @@
           loadQuizzesList();
           setStatus("Quiz deleted.");
         }
-      });
-
-      const btnExportSingle = document.createElement("button");
-      btnExportSingle.className = "secondary-btn small";
-      btnExportSingle.textContent = "⬇ Export HTML";
-      btnExportSingle.addEventListener("click", () => {
-        exportQuizAsSingleHtml(quiz);
       });
 
       actions.appendChild(btnLoad);
@@ -119,16 +157,28 @@
 
   function fillFormFromQuiz(quiz) {
     currentId = quiz.id;
-    titleEl.value = quiz.title;
-    descEl.value = quiz.description || "";
-    sheetIdEl.value = quiz.sheetId || "";
-    const lines = quiz.questions.map(
-      q =>
-        `${q.text} || ${q.options[0]} || ${q.options[1]} || ${q.options[2]} || ${q.options[3]} || ${
-          q.correctIndex + 1
-        }`
-    );
-    questionsEl.value = lines.join("\n");
+    if (titleEl) titleEl.value = quiz.title;
+    if (descEl) descEl.value = quiz.description || "";
+    if (sheetIdEl) sheetIdEl.value = quiz.sheetId || "";
+
+    if (questionsEl) {
+      const lines = quiz.questions.map(
+        q =>
+          `${q.text} || ${q.options[0]} || ${q.options[1]} || ${q.options[2]} || ${q.options[3]} || ${
+            q.correctIndex + 1
+          }`
+      );
+      questionsEl.value = lines.join("\n");
+    }
+
+    const settings = quiz.settings || {};
+    if (timerEnabledEl) timerEnabledEl.checked = settings.timer ? !!settings.timer.enabled : true;
+    if (timerSecondsEl) timerSecondsEl.value = settings.timer ? settings.timer.seconds || 20 : 20;
+    if (ttsEnabledEl) ttsEnabledEl.checked = settings.tts ? !!settings.tts.enabled : true;
+    if (soundPackEl) soundPackEl.value = settings.sound || "clap-pop";
+    if (shuffleQuestionsEl) shuffleQuestionsEl.checked = !!settings.shuffleQuestions;
+    if (shuffleOptionsEl) shuffleOptionsEl.checked = !!settings.shuffleOptions;
+
     setStatus("Loaded quiz for editing.");
   }
 
@@ -150,6 +200,8 @@
       tempQuiz.sheetId = sheetId;
     }
 
+    tempQuiz.settings = getSettingsFromForm();
+
     const errors = window.QuizCore.validateQuiz(tempQuiz);
     if (errors.length) {
       alert("Please fix:\n\n" + errors.join("\n"));
@@ -164,9 +216,8 @@
     previewOverlay.classList.remove("hidden");
   }
 
-  // 🔹 Google Sheet CSV → textarea lines
   function csvToQuestionLines(csv) {
-    const lines = csv.split(/\r?\n/).slice(1); // skip header
+    const lines = csv.split(/\r?\n/).slice(1);
     const out = [];
     for (const line of lines) {
       if (!line.trim()) continue;
@@ -180,47 +231,101 @@
       const d = (dRaw || "").trim();
       const ansLetter = (ansRaw || "").trim().toUpperCase();
       if (!q || !a || !b || !c || !d || !ansLetter) continue;
-
       let correctNum = 1;
       if (ansLetter === "A") correctNum = 1;
       else if (ansLetter === "B") correctNum = 2;
       else if (ansLetter === "C") correctNum = 3;
       else if (ansLetter === "D") correctNum = 4;
-
       out.push(`${q} || ${a} || ${b} || ${c} || ${d} || ${correctNum}`);
     }
     return out;
   }
 
-  // 🔹 Export single-file HTML quiz app
   function exportQuizAsSingleHtml(quiz) {
     const exportData = {
       title: quiz.title,
       description: quiz.description || "",
       questions: quiz.questions,
-      sheetId: quiz.sheetId || ""
+      sheetId: quiz.sheetId || "",
+      settings: quiz.settings || {
+        timer: { enabled: true, seconds: 20, style: "ring" },
+        tts: { enabled: true, read: "question" },
+        sound: "clap-pop",
+        shuffleQuestions: false,
+        shuffleOptions: false,
+        theme: "dark"
+      }
     };
 
     const quizJson = JSON.stringify(exportData);
 
     const html =
-      `<!DOCTYPE html>
+`<!DOCTYPE html>
 <html lang="ta">
 <head>
   <meta charset="UTF-8">
-  <title>` +
-      (exportData.title || "EAGLE Quiz") +
-      `</title>
+  <title>${exportData.title || "EAGLE Quiz"}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Standalone quiz generated from Google Sheet.">
   <style>
-    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:#020617;color:#e5e7eb;margin:0;padding:16px;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;}
-    .shell{width:100%;max-width:640px;background:#020617;border-radius:20px;border:1px solid rgba(148,163,184,.5);box-shadow:0 20px 40px rgba(15,23,42,.9);padding:16px;}
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Inter",sans-serif;
+      background:#020617;
+      color:#e5e7eb;
+      margin:0;
+      padding:16px;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      min-height:100vh;
+    }
+    .shell{
+      width:100%;
+      max-width:640px;
+      background:#020617;
+      border-radius:20px;
+      border:1px solid rgba(148,163,184,.5);
+      box-shadow:0 20px 40px rgba(15,23,42,.9);
+      padding:16px;
+    }
     h1{font-size:1.1rem;margin:0 0 4px;}
     .desc{font-size:.8rem;color:#9ca3af;margin-bottom:10px;}
+    .top-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;}
+    .timer-wrapper{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:.75rem;
+      color:#9ca3af;
+    }
+    .timer-ring{
+      width:34px;height:34px;
+    }
+    .timer-ring circle{
+      fill:none;
+      stroke:#4b5563;
+      stroke-width:4;
+    }
+    .timer-ring circle.progress{
+      stroke:#22c55e;
+      stroke-linecap:round;
+      transform:rotate(-90deg);
+      transform-origin:50% 50%;
+      transition:stroke-dashoffset 0.15s linear, stroke 0.15s linear;
+    }
     .q-wrap h2{font-size:.95rem;margin-bottom:6px;}
     .options{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;}
-    .opt-btn{width:100%;text-align:left;padding:7px 9px;border-radius:12px;border:1px solid rgba(55,65,81,.9);background:#020617;color:#e5e7eb;font-size:.8rem;cursor:pointer;}
+    .opt-btn{
+      width:100%;
+      text-align:left;
+      padding:7px 9px;
+      border-radius:12px;
+      border:1px solid rgba(55,65,81,.9);
+      background:#020617;
+      color:#e5e7eb;
+      font-size:.8rem;
+      cursor:pointer;
+    }
     .opt-btn:hover{border-color:#818cf8;}
     .opt-btn.correct{border-color:#22c55e;background:rgba(22,163,74,.12);}
     .opt-btn.wrong{border-color:#f97373;background:rgba(248,113,113,.12);}
@@ -231,24 +336,39 @@
     .btn-primary{background:linear-gradient(135deg,#4f46e5,#ec4899);color:#fff;}
     .btn-ghost{background:#020617;color:#cbd5f5;border:1px solid rgba(75,85,99,.9);}
     .status{font-size:.75rem;color:#9ca3af;margin-top:6px;}
+    .score-big{font-size:1.2rem;margin-bottom:4px;}
   </style>
 </head>
 <body>
 <div class="shell">
-  <h1>` +
-      (exportData.title || "EAGLE Quiz") +
-      `</h1>
-  <div class="desc">` +
-      (exportData.description || "Interactive quiz") +
-      `</div>
+  <div class="top-row">
+    <div>
+      <h1>${exportData.title || "EAGLE Quiz"}</h1>
+      <div class="desc">${exportData.description || "Interactive quiz"}</div>
+    </div>
+    <div class="timer-wrapper" id="timerBox" style="display:none;">
+      <svg class="timer-ring" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="15"></circle>
+        <circle class="progress" cx="18" cy="18" r="15" stroke-dasharray="94" stroke-dashoffset="0"></circle>
+      </svg>
+      <span id="timerLabel">00</span>
+    </div>
+  </div>
   <div id="quizRoot"></div>
   <div class="status" id="statusLine"></div>
 </div>
 <script>
-  const EXPORT_QUIZ = ` +
-      quizJson +
-      `;
+  const EXPORT_QUIZ = ${quizJson};
   const STORAGE_KEY = "EAGLE_STANDALONE_" + (EXPORT_QUIZ.sheetId || "LOCAL");
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
 
   function parseCsvToQuestions(csv){
     const lines = csv.split(/\\r?\\n/).slice(1);
@@ -293,10 +413,75 @@
     }catch(e){}
   }
 
+  let audioCtx = null;
+  function getAudioCtx(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    return audioCtx;
+  }
+  function playBeep(freq, dur){
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + dur + 0.02);
+  }
+  function playCorrectSound(){
+    if(EXPORT_QUIZ.settings.sound === "clap-pop"){
+      playBeep(880,0.12);
+      setTimeout(()=>playBeep(1320,0.1),90);
+    }
+  }
+  function playWrongSound(){
+    if(EXPORT_QUIZ.settings.sound === "clap-pop"){
+      playBeep(220,0.18);
+    }
+  }
+
+  function getTamilVoice(){
+    const voices = speechSynthesis.getVoices();
+    const tamil = voices.filter(v => (v.lang||"").toLowerCase().startsWith("ta"));
+    if(tamil.length){
+      const female = tamil.find(v => /female|woman|lady/i.test(v.name));
+      return female || tamil[0];
+    }
+    return null;
+  }
+  let cachedTamilVoice = null;
+  function speakQuestion(text){
+    if(!EXPORT_QUIZ.settings.tts || !EXPORT_QUIZ.settings.tts.enabled) return;
+    if(!("speechSynthesis" in window)) return;
+    const utt = new SpeechSynthesisUtterance(text);
+    if(!cachedTamilVoice){
+      cachedTamilVoice = getTamilVoice();
+      if(!cachedTamilVoice){
+        const all = speechSynthesis.getVoices();
+        cachedTamilVoice = all.find(v => v.lang && v.lang.toLowerCase().startsWith("ta")) || all[0];
+      }
+    }
+    if(cachedTamilVoice) utt.voice = cachedTamilVoice;
+    utt.rate = 0.95;
+    utt.pitch = 1.0;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utt);
+  }
+
   function renderQuiz(root, questions){
     root.innerHTML = "";
+    let qList = questions.slice();
+    if(EXPORT_QUIZ.settings.shuffleQuestions) qList = shuffle(qList);
+
     let index = 0;
     let score = 0;
+
     const qWrap = document.createElement("div");
     qWrap.className = "q-wrap";
     const progressEl = document.createElement("div");
@@ -312,27 +497,98 @@
     restartBtn.className = "btn btn-ghost";
     restartBtn.textContent = "Restart";
     restartBtn.style.display = "none";
+    const shareBtn = document.createElement("button");
+    shareBtn.className = "btn btn-ghost";
+    shareBtn.textContent = "Share Score";
+
     row.appendChild(nextBtn);
     row.appendChild(restartBtn);
+    row.appendChild(shareBtn);
+
     root.appendChild(qWrap);
     root.appendChild(progressEl);
     root.appendChild(resultEl);
     root.appendChild(row);
 
+    const timerBox = document.getElementById("timerBox");
+    const timerLabel = document.getElementById("timerLabel");
+    const ring = document.querySelector(".timer-ring circle.progress");
+    const fullDash = 94;
+
     let locked = false;
+    let timerId = null;
+    let timeLeft = EXPORT_QUIZ.settings.timer.seconds || 20;
+
+    function resetTimerVisual(){
+      if(!EXPORT_QUIZ.settings.timer.enabled) return;
+      if(!timerBox || !timerLabel || !ring) return;
+      timerBox.style.display = "flex";
+      const total = EXPORT_QUIZ.settings.timer.seconds || 20;
+      timeLeft = total;
+      timerLabel.textContent = String(total);
+      ring.style.strokeDasharray = fullDash;
+      ring.style.strokeDashoffset = 0;
+      ring.style.stroke = "#22c55e";
+    }
+
+    function startTimer(onTimeout){
+      if(!EXPORT_QUIZ.settings.timer.enabled) return;
+      if(timerId) clearInterval(timerId);
+      resetTimerVisual();
+      const total = EXPORT_QUIZ.settings.timer.seconds || 20;
+
+      timerId = setInterval(()=>{
+        timeLeft--;
+        if(timeLeft < 0){
+          clearInterval(timerId);
+          timerId = null;
+          if(ring) ring.style.stroke = "#f97373";
+          onTimeout();
+        }else{
+          if(timerLabel) timerLabel.textContent = String(timeLeft);
+          const fraction = (total - timeLeft) / total;
+          if(ring){
+            ring.style.strokeDashoffset = fraction * fullDash;
+            ring.style.stroke = timeLeft <= 5 ? "#f97373" : "#22c55e";
+          }
+        }
+      },1000);
+    }
+
+    function stopTimer(){
+      if(timerId){
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
 
     function showQuestion(){
       locked = false;
       resultEl.textContent = "";
-      const q = questions[index];
+      const q = qList[index];
       qWrap.innerHTML = "";
+
       const title = document.createElement("h2");
       title.textContent = "Q" + (index+1) + ". " + q.text;
       qWrap.appendChild(title);
+
+      if(EXPORT_QUIZ.settings.tts && EXPORT_QUIZ.settings.tts.enabled){
+        const loadVoices = () => speakQuestion(q.text);
+        if(speechSynthesis.getVoices().length === 0){
+          speechSynthesis.onvoiceschanged = loadVoices;
+        } else {
+          loadVoices();
+        }
+      }
+
       const list = document.createElement("ul");
       list.className = "options";
       qWrap.appendChild(list);
-      q.options.forEach((opt,i)=>{
+
+      let optionOrder = q.options.map((opt,i)=>({opt,i}));
+      if(EXPORT_QUIZ.settings.shuffleOptions) optionOrder = shuffle(optionOrder);
+
+      optionOrder.forEach(({opt,i})=>{
         const li = document.createElement("li");
         const btn = document.createElement("button");
         btn.className = "opt-btn";
@@ -340,35 +596,62 @@
         btn.addEventListener("click", ()=>{
           if(locked) return;
           locked = true;
+          stopTimer();
           if(i === q.correctIndex){
             score++;
             btn.classList.add("correct");
             resultEl.textContent = "✅ Correct!";
+            playCorrectSound();
           }else{
             btn.classList.add("wrong");
             resultEl.textContent = "❌ Wrong!";
+            playWrongSound();
           }
           Array.from(list.querySelectorAll(".opt-btn")).forEach((b,idx)=>{
-            if(idx === q.correctIndex) b.classList.add("correct");
+            const original = optionOrder[idx].i;
+            if(original === q.correctIndex) b.classList.add("correct");
           });
         });
         li.appendChild(btn);
         list.appendChild(li);
       });
-      progressEl.textContent = "Question " + (index+1) + " of " + questions.length;
+
+      progressEl.textContent = "Question " + (index+1) + " of " + qList.length;
+
+      if(EXPORT_QUIZ.settings.timer.enabled){
+        startTimer(()=>{
+          if(!locked){
+            locked = true;
+            resultEl.textContent = "⏰ Time up!";
+            playWrongSound();
+            Array.from(list.querySelectorAll(".opt-btn")).forEach((b,idx)=>{
+              const original = optionOrder[idx].i;
+              if(original === q.correctIndex) b.classList.add("correct");
+            });
+          }
+        });
+      } else {
+        if(timerBox) timerBox.style.display = "none";
+      }
     }
 
     function finishQuiz(){
+      stopTimer();
       qWrap.innerHTML = "";
-      resultEl.textContent = "🎉 You scored " + score + " / " + questions.length;
+      const percent = Math.round((score / qList.length) * 100);
+      const msg = percent >= 80 ? "🔥 Awesome!" :
+                  percent >= 50 ? "👌 Good try!" : "📚 Keep practicing!";
+      resultEl.innerHTML = "<div class='score-big'>Score: " + score + " / " + qList.length +
+        " (" + percent + "%)</div>" + msg + " 🎉🎉";
       progressEl.textContent = "Quiz finished.";
       nextBtn.style.display = "none";
       restartBtn.style.display = "inline-flex";
     }
 
     nextBtn.addEventListener("click", ()=>{
-      if(index < questions.length - 1){
+      if(index < qList.length - 1){
         index++;
+        stopTimer();
         showQuestion();
       }else{
         finishQuiz();
@@ -380,7 +663,23 @@
       score = 0;
       nextBtn.style.display = "inline-flex";
       restartBtn.style.display = "none";
+      stopTimer();
       showQuestion();
+    });
+
+    shareBtn.addEventListener("click", ()=>{
+      const percent = Math.round((score / qList.length) * 100);
+      const text = "I scored " + score + "/" + qList.length + " (" + percent +
+        "%) in the quiz: " + (EXPORT_QUIZ.title || "EAGLE Quiz");
+      const url = location.href;
+      if(navigator.share){
+        navigator.share({ title: EXPORT_QUIZ.title || "Quiz", text, url }).catch(()=>{});
+      }else if(navigator.clipboard){
+        navigator.clipboard.writeText(text + "\\n" + url);
+        alert("Score + link copied. You can paste it in WhatsApp / Instagram / YouTube!");
+      }else{
+        alert(text + "\\n" + url);
+      }
     });
 
     showQuestion();
@@ -399,7 +698,7 @@
       if(!res.ok) throw new Error("HTTP " + res.status);
       const csv = await res.text();
       const newQs = parseCsvToQuestions(csv);
-      if(!newQs.length) {
+      if(!newQs.length){
         status.textContent = "Using stored questions (sheet gave no rows).";
         return;
       }
@@ -441,26 +740,32 @@
     a.download = safeTitle + ".html";
     a.click();
     URL.revokeObjectURL(url);
-    setStatus("Exported standalone HTML quiz file.");
+    setStatus("Exported standalone HTML quiz file (pro version).");
   }
 
   // Event listeners
-  btnNew.addEventListener("click", clearForm);
+  if (btnNew) {
+    btnNew.addEventListener("click", clearForm);
+  }
 
-  btnSave.addEventListener("click", () => {
-    const quiz = buildQuizFromForm();
-    if (!quiz) return;
-    window.QuizStorage.upsert(quiz);
-    currentId = quiz.id;
-    loadQuizzesList();
-    setStatus("Quiz saved successfully.");
-  });
+  if (btnSave) {
+    btnSave.addEventListener("click", () => {
+      const quiz = buildQuizFromForm();
+      if (!quiz) return;
+      window.QuizStorage.upsert(quiz);
+      currentId = quiz.id;
+      loadQuizzesList();
+      setStatus("Quiz saved successfully.");
+    });
+  }
 
-  btnPreview.addEventListener("click", () => {
-    const quiz = buildQuizFromForm();
-    if (!quiz) return;
-    openPreview(quiz);
-  });
+  if (btnPreview) {
+    btnPreview.addEventListener("click", () => {
+      const quiz = buildQuizFromForm();
+      if (!quiz) return;
+      openPreview(quiz);
+    });
+  }
 
   if (btnExportStandalone) {
     btnExportStandalone.addEventListener("click", () => {
@@ -470,59 +775,68 @@
     });
   }
 
-  btnClosePreview.addEventListener("click", () => {
-    previewOverlay.classList.add("hidden");
-  });
-
-  previewOverlay.addEventListener("click", e => {
-    if (e.target === previewOverlay) {
+  if (btnClosePreview) {
+    btnClosePreview.addEventListener("click", () => {
       previewOverlay.classList.add("hidden");
-    }
-  });
+    });
+  }
 
-  btnExport.addEventListener("click", () => {
-    const quizzes = window.QuizStorage.loadAll();
-    if (!quizzes.length) {
-      alert("No quizzes to export.");
-      return;
-    }
-    const blob = new Blob([JSON.stringify(quizzes, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "eagle-quizzes.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    setStatus("Exported quizzes as JSON file.");
-  });
-
-  btnImport.addEventListener("click", () => {
-    importFile.click();
-  });
-
-  importFile.addEventListener("change", () => {
-    const file = importFile.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const data = JSON.parse(reader.result);
-        if (!Array.isArray(data)) {
-          alert("Invalid file format.");
-          return;
-        }
-        window.QuizStorage.saveAll(data);
-        loadQuizzesList();
-        setStatus("Imported quizzes successfully.");
-      } catch (e) {
-        console.error(e);
-        alert("Failed to import JSON.");
+  if (previewOverlay) {
+    previewOverlay.addEventListener("click", e => {
+      if (e.target === previewOverlay) {
+        previewOverlay.classList.add("hidden");
       }
-    };
-    reader.readAsText(file);
-  });
+    });
+  }
 
-  // 🔹 Import from Google Sheet
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
+      const quizzes = window.QuizStorage.loadAll();
+      if (!quizzes.length) {
+        alert("No quizzes to export.");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(quizzes, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "eagle-quizzes.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus("Exported quizzes as JSON file.");
+    });
+  }
+
+  if (btnImport) {
+    btnImport.addEventListener("click", () => {
+      importFile.click();
+    });
+  }
+
+  if (importFile) {
+    importFile.addEventListener("change", () => {
+      const file = importFile.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!Array.isArray(data)) {
+            alert("Invalid file format.");
+            return;
+          }
+          window.QuizStorage.saveAll(data);
+          loadQuizzesList();
+          setStatus("Imported quizzes successfully.");
+        } catch (e) {
+          console.error(e);
+          alert("Failed to import JSON.");
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
   if (btnSheetImport) {
     btnSheetImport.addEventListener("click", async () => {
       const sheetId = sheetIdEl.value.trim();
@@ -552,7 +866,6 @@
     });
   }
 
-  // Light/dark theme toggle (basic)
   const themeToggle = document.getElementById("themeToggle");
   if (themeToggle) {
     themeToggle.addEventListener("click", () => {
@@ -560,7 +873,6 @@
     });
   }
 
-  // Init
   loadQuizzesList();
   setStatus("Ready. Create or import your quiz!");
 })();
