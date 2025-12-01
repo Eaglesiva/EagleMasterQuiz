@@ -4,25 +4,45 @@
   <meta charset="UTF-8" />
   <title>EAGLE Master Quiz Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- 🦅 Favicon -->
+  <link rel="icon" href="https://raw.githubusercontent.com/Eaglesiva/EagleMasterQuiz/main/favicon.png">
+
+  <!-- 🔍 SEO -->
+  <meta name="description" content="Create, save, preview & play quizzes — offline friendly online master quiz builder.">
+  <meta name="keywords" content="Quiz Builder, MCQ Generator, Quiz Maker, Online Test, Play Quiz, Education Tools">
+  <meta name="author" content="Eagle">
+
+  <!-- 🌐 Social Preview -->
+  <meta property="og:title" content="EAGLE Master Quiz Builder">
+  <meta property="og:description" content="Create, preview, save & play quizzes — offline friendly master quiz web app.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/USERNAME/EagleMasterQuiz/main/social.png">
+  <meta property="og:url" content="https://USERNAME.github.io/EagleMasterQuiz/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="app-body">
   <div class="app-shell">
     <header class="app-header">
       <div class="app-title">
-        <span class="logo-icon">??</span>
+        <span class="logo-icon">🦅</span>
         <div>
           <h1>EAGLE Master Quiz Builder</h1>
-          <p>Create, save, preview & play quizzes � offline friendly</p>
+          <p>Create, save, preview & play quizzes – offline friendly</p>
         </div>
       </div>
-      <button id="themeToggle" class="ghost-btn">? / ??</button>
+      <div style="display:flex; gap:6px;">
+        <a href="library.html" class="secondary-btn small">📚 Public Library</a>
+        <button id="themeToggle" class="ghost-btn">☀ / 🌙</button>
+      </div>
     </header>
 
     <main class="app-main">
       <!-- LEFT: QUIZ EDITOR -->
       <section class="panel panel-editor">
-        <h2>?? Create / Edit Quiz</h2>
+        <h2>🛠 Create / Edit Quiz</h2>
 
         <label class="field">
           <span>Quiz Title</span>
@@ -46,9 +66,9 @@
         </label>
 
         <div class="button-row">
-          <button id="btnNew" class="ghost-btn small">?? New</button>
-          <button id="btnSave" class="primary-btn">?? Save Quiz</button>
-          <button id="btnPreview" class="secondary-btn">?? Preview</button>
+          <button id="btnNew" class="ghost-btn small">🧹 New</button>
+          <button id="btnSave" class="primary-btn">💾 Save Quiz</button>
+          <button id="btnPreview" class="secondary-btn">👁 Preview</button>
         </div>
 
         <p id="statusBar" class="status-bar">Ready.</p>
@@ -56,25 +76,25 @@
 
       <!-- RIGHT: QUIZ LIST -->
       <section class="panel panel-list">
-        <h2>?? Saved Quizzes</h2>
+        <h2>📚 Saved Quizzes</h2>
         <div id="quizList" class="quiz-list">
           <!-- Filled by ui.js -->
         </div>
         <div class="button-row">
-          <button id="btnExport" class="secondary-btn small">?? Export JSON</button>
-          <button id="btnImport" class="ghost-btn small">?? Import JSON</button>
+          <button id="btnExport" class="secondary-btn small">📤 Export JSON</button>
+          <button id="btnImport" class="ghost-btn small">📥 Import JSON</button>
         </div>
         <input type="file" id="importFile" accept="application/json" hidden />
       </section>
     </main>
   </div>
 
-  <!-- PREVIEW OVERLAY -->
+  <!-- 🔎 PREVIEW OVERLAY -->
   <div id="previewOverlay" class="preview-overlay hidden">
     <div class="preview-dialog">
       <div class="preview-header">
         <h2>Quiz Preview</h2>
-        <button id="btnClosePreview" class="ghost-btn small">?</button>
+        <button id="btnClosePreview" class="ghost-btn small">✖</button>
       </div>
       <div id="previewContainer" class="preview-container">
         <!-- player.js will render quiz here -->
