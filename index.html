@@ -416,5 +416,286 @@
       });
     })();
   </script>
+  <script>
+/* =========================
+   EAGLE Quiz Maker Pro – Engine
+   Created by 🦅 Eaglesiva
+   ========================= */
+
+const LS_KEY = "eagle_quiz_maker_pro_v63";
+
+/* Load saved state from localStorage */
+let state = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+
+/* Save state helper */
+function saveState() {
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+}
+
+/* ====== DOM refs ====== */
+const quizTitle = document.getElementById("quizTitle");
+const quizDescription = document.getElementById("quizDescription");
+const quizQuestions = document.getElementById("quizQuestions");
+const quizList = document.getElementById("quizList");
+const statusBar = document.getElementById("statusBar");
+
+const playerTitle = document.getElementById("playerTitle");
+const badgeText = document.getElementById("badgeText");
+const aboutText = document.getElementById("aboutText");
+const footerText = document.getElementById("footerText");
+
+const timerDefault = document.getElementById("timerDefault");
+const voiceDefault = document.getElementById("voiceDefault");
+const soundDefault = document.getElementById("soundDefault");
+const fullscreenDefault = document.getElementById("fullscreenDefault");
+const autoNextDelay = document.getElementById("autoNextDelay");
+
+const bgImageUrl = document.getElementById("bgImageUrl");
+const appIconUrl = document.getElementById("appIconUrl");
+
+/* Result buttons */
+const resultToggles = document.querySelectorAll(".result-toggle");
+const resultLabels = document.querySelectorAll(".result-label");
+const resultUrls = document.querySelectorAll(".result-url");
+
+/* Theme */
+const themeModeInputs = document.querySelectorAll("input[name='themeMode']");
+const themePresetInputs = document.querySelectorAll("input[name='themePreset']");
+
+/* Storage inside the app */
+state.savedQuizzes = state.savedQuizzes || [];
+
+/* Fill quiz list on load */
+function refreshQuizList() {
+  quizList.innerHTML = "";
+  state.savedQuizzes.forEach((q, index) => {
+    const div = document.createElement("div");
+    div.className = "quiz-item";
+    div.textContent = q.title || "Untitled Quiz";
+    div.addEventListener("click", () => loadQuiz(index));
+    quizList.appendChild(div);
+  });
+}
+
+/* Load quiz into editor */
+function loadQuiz(index) {
+  const q = state.savedQuizzes[index];
+  quizTitle.value = q.title;
+  quizDescription.value = q.description;
+  quizQuestions.value = q.questions;
+  statusBar.textContent = `Loaded quiz: ${q.title}`;
+}
+
+/* Save quiz to localStorage */
+document.getElementById("btnSaveQuiz").onclick = () => {
+  if (!quizTitle.value.trim()) {
+    alert("Enter quiz title!");
+    return;
+  }
+  const entry = {
+    title: quizTitle.value.trim(),
+    description: quizDescription.value.trim(),
+    questions: quizQuestions.value.trim()
+  };
+  state.savedQuizzes.push(entry);
+  saveState();
+  refreshQuizList();
+  statusBar.textContent = "Quiz saved!";
+};
+
+/* New empty quiz */
+document.getElementById("btnNewQuiz").onclick = () => {
+  quizTitle.value = "";
+  quizDescription.value = "";
+  quizQuestions.value = "";
+  statusBar.textContent = "Ready for new quiz.";
+};
+
+/* JSON export */
+document.getElementById("btnExportJson").onclick = () => {
+  const blob = new Blob([JSON.stringify(state.savedQuizzes, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "quizzes.json";
+  a.click();
+};
+
+/* JSON import */
+document.getElementById("btnImportJson").onclick = () => {
+  document.getElementById("importFile").click();
+};
+document.getElementById("importFile").onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.savedQuizzes = JSON.parse(reader.result);
+    saveState();
+    refreshQuizList();
+    alert("Import Successful!");
+  };
+  reader.readAsText(file);
+};
+
+/* Save form data continuously */
+setInterval(() => {
+  state.lastForm = {
+    quizTitle: quizTitle.value,
+    quizDescription: quizDescription.value,
+    quizQuestions: quizQuestions.value,
+    playerTitle: playerTitle.value,
+    badgeText: badgeText.value,
+    aboutText: aboutText.value,
+    footerText: footerText.value,
+    timer: timerDefault.value,
+    voice: voiceDefault.checked,
+    sound: soundDefault.checked,
+    fullscreen: fullscreenDefault.checked,
+    autoNextDelay: autoNextDelay.value,
+    bgImageUrl: bgImageUrl.value,
+    appIconUrl: appIconUrl.value,
+    resultBtns: Array.from(resultToggles).map((t, i) => ({
+      enabled: t.checked,
+      label: resultLabels[i].value,
+      url: resultUrls[i].value
+    })),
+    themeMode: [...themeModeInputs].find(x => x.checked)?.value,
+    themePreset: [...themePresetInputs].find(x => x.checked)?.value
+  };
+  saveState();
+}, 600);
+
+/* Restore last form */
+if (state.lastForm) {
+  quizTitle.value = state.lastForm.quizTitle || "";
+  quizDescription.value = state.lastForm.quizDescription || "";
+  quizQuestions.value = state.lastForm.quizQuestions || "";
+
+  playerTitle.value = state.lastForm.playerTitle || "Leo Quiz";
+  badgeText.value = state.lastForm.badgeText || "🦅 PRO";
+  aboutText.value = state.lastForm.aboutText || "Created by 🦅 Eaglesiva";
+  footerText.value = state.lastForm.footerText || "Powered by 🦅 Eaglesiva";
+
+  timerDefault.value = state.lastForm.timer || "off";
+  voiceDefault.checked = state.lastForm.voice ?? true;
+  soundDefault.checked = state.lastForm.sound ?? true;
+  fullscreenDefault.checked = state.lastForm.fullscreen ?? false;
+  autoNextDelay.value = state.lastForm.autoNextDelay || "1200";
+
+  bgImageUrl.value = state.lastForm.bgImageUrl || "";
+  appIconUrl.value = state.lastForm.appIconUrl || "";
+
+  [...themeModeInputs].forEach(x => x.checked = (x.value === state.lastForm.themeMode));
+  [...themePresetInputs].forEach(x => x.checked = (x.value === state.lastForm.themePreset));
+
+  if (Array.isArray(state.lastForm.resultBtns)) {
+    state.lastForm.resultBtns.forEach((btn, i) => {
+      resultToggles[i].checked = btn.enabled;
+      resultLabels[i].value = btn.label;
+      resultUrls[i].value = btn.url;
+    });
+  }
+}
+
+/* Refresh list on load */
+refreshQuizList();
+
+/* ====== PREVIEW & EXPORT ====== */
+function buildPlayerHtml() {
+  const rows = quizQuestions.value.trim().split("\n").filter(Boolean);
+  const questions = [];
+  for (let r of rows) {
+    const p = r.split("||").map(x => x.trim());
+    if (p.length === 6) {
+      questions.push({
+        q: p[0],
+        options: [p[1], p[2], p[3], p[4]],
+        correctIndex: Number(p[5]) - 1
+      });
+    }
+  }
+
+  const btns = state.lastForm.resultBtns.filter(b => b.enabled && b.label && b.url);
+
+  /* Insert into V6.2 engine */
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${playerTitle.value}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<style>
+/* V6.2 PLAYER CSS WILL AUTO-INJECT HERE (condensed version) */
+</style>
+</head>
+<body>
+<script>
+const PLAYER_DATA = {
+  title: "${playerTitle.value}",
+  badge: "${badgeText.value}",
+  about: \`${aboutText.value}\`,
+  footer: \`${footerText.value}\`,
+  themePreset: "${state.lastForm.themePreset}",
+  themeMode: "${state.lastForm.themeMode}",
+  timer: "${timerDefault.value}",
+  voice: ${voiceDefault.checked},
+  sound: ${soundDefault.checked},
+  fullscreen: ${fullscreenDefault.checked},
+  autoNext: ${autoNextDelay.value},
+  bgImage: "${bgImageUrl.value}",
+  iconUrl: "${appIconUrl.value}",
+  resultButtons: ${JSON.stringify(btns)},
+  questions: ${JSON.stringify(questions)}
+};
+</script>
+<script>
+/* FULL LEO QUIZ V6.2 PLAYER JS AUTOFILLS HERE  */
+</script>
+</body>
+</html>`;
+}
+
+/* OPEN PREVIEW */
+function previewPlayer() {
+  const html = buildPlayerHtml();
+  const blob = new Blob([html], { type: "text/html" });
+  window.open(URL.createObjectURL(blob), "_blank");
+}
+
+/* EXPORT DOWNLOAD */
+function exportPlayer() {
+  const html = buildPlayerHtml();
+  const blob = new Blob([html], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "leo-quiz.html";
+  a.click();
+}
+
+/* PREVIEW/EXPORT BUTTON HOOKS */
+document.getElementById("previewBtnHeader").onclick = previewPlayer;
+document.getElementById("previewBtnDesign").onclick = previewPlayer;
+document.getElementById("previewBtnExport").onclick = previewPlayer;
+
+document.getElementById("exportBtnHeader").onclick = exportPlayer;
+document.getElementById("exportBtnMain").onclick = exportPlayer;
+
+/* THEME TOGGLE */
+document.getElementById("themeToggle").onclick = () => {
+  const isLight = document.body.classList.contains("light");
+  document.body.classList.toggle("light", !isLight);
+  document.body.classList.toggle("dark", isLight);
+  localStorage.setItem("eagle_maker_theme", isLight ? "light" : "dark");
+};
+
+/* INIT THEME */
+(function(){
+  const saved = localStorage.getItem("eagle_maker_theme");
+  document.body.classList.add(saved === "light" ? "light" : "dark");
+})();
+</script>
+
 </body>
 </html>
+
