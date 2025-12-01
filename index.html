@@ -5,154 +5,416 @@
   <title>EAGLE Quiz Maker Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- 🦅 Favicon (optional – you can change URL) -->
+  <!-- SEO -->
+  <meta name="description" content="EAGLE Quiz Maker Pro – build, style and export powerful quiz apps from Google Sheets or manual input.">
+  <meta name="keywords" content="EAGLE Quiz Maker Pro, Quiz Builder, MCQ Maker, Leo Quiz, Eaglesiva">
+  <meta name="author" content="🦅 Eaglesiva">
+
+  <!-- Favicon (you can change this URL) -->
   <link rel="icon" href="https://raw.githubusercontent.com/Eaglesiva/EagleMasterQuiz/main/favicon.png">
 
-  <!-- 🔍 Basic SEO -->
-  <meta name="description" content="EAGLE Quiz Maker Pro – Create, import, preview and export powerful quiz apps from Google Sheets.">
-  <meta name="keywords" content="Quiz Maker, MCQ, Tamil Quiz, Google Sheet Quiz, Blogger Quiz, EAGLE Quiz Maker Pro">
-  <meta name="author" content="Eagle">
-
-  <link rel="stylesheet" href="style.css" />
+  <!-- PART-B: CSS styles will be added later in <style> or external file -->
 </head>
-<body class="app-body">
+<body>
   <div class="app-shell">
+    <!-- HEADER -->
     <header class="app-header">
-      <div class="app-title">
-        <span class="logo-icon">🦅</span>
-        <div>
-          <h1>EAGLE Quiz Maker Pro</h1>
-          <p>Create, import, preview & export quizzes – offline friendly</p>
+      <div class="app-title-wrap">
+        <div class="logo-circle">🦅</div>
+        <div class="title-texts">
+          <h1 class="app-title">EAGLE Quiz Maker Pro</h1>
+          <p class="app-subtitle">Build once, export unlimited Leo Quiz players</p>
         </div>
+        <span class="app-badge">🦅 PRO</span>
       </div>
-      <div style="display:flex; gap:6px; align-items:center;">
+
+      <div class="header-actions">
         <button id="themeToggle" class="ghost-btn">☀ / 🌙</button>
+        <button id="previewBtnHeader" class="secondary-btn small">👁 Preview</button>
+        <button id="exportBtnHeader" class="primary-btn small">📤 Export Player</button>
       </div>
     </header>
 
+    <!-- MAIN CONTENT -->
     <main class="app-main">
-      <!-- LEFT: QUIZ EDITOR -->
-      <section class="panel panel-editor">
-        <h2>🛠 Create / Edit Quiz</h2>
+      <!-- SIDEBAR TABS -->
+      <aside class="tab-sidebar">
+        <button class="tab-button active" data-tab-target="#tab-quiz">
+          📝 Quiz Data
+        </button>
+        <button class="tab-button" data-tab-target="#tab-design">
+          🎨 Design & Theme
+        </button>
+        <button class="tab-button" data-tab-target="#tab-export">
+          ⚙️ Export Settings
+        </button>
+      </aside>
 
-        <label class="field">
-          <span>Quiz Title</span>
-          <input id="quizTitle" type="text" placeholder="e.g. 6th Book Back Tamil Quiz" />
-        </label>
+      <!-- TAB PANELS -->
+      <section class="tab-panels">
 
-        <label class="field">
-          <span>Quiz Description</span>
-          <textarea id="quizDescription" rows="2" placeholder="Short intro for this quiz..."></textarea>
-        </label>
-
-        <!-- Google Sheet ID -->
-        <label class="field">
-          <span>Google Sheet ID (for this quiz)</span>
-          <input id="sheetId" type="text"
-                 placeholder="Paste Google Sheet ID (the part after /d/ and before /edit)">
-          <p class="help-text">
-            Sheet format: <code>Question | A | B | C | D | Answer (A/B/C/D)</code> – same as your screenshot.
+        <!-- TAB 1 – QUIZ DATA -->
+        <section id="tab-quiz" class="tab-panel active">
+          <h2>📝 Quiz Data</h2>
+          <p class="panel-help">
+            Enter quiz title, description and questions. You can type manually or paste from your sheet export.
           </p>
-        </label>
 
-        <!-- PLAYER SETTINGS -->
-        <section class="panel" style="margin-bottom:10px; padding:10px 10px 8px;">
-          <h2 style="margin-bottom:6px; font-size:0.85rem; letter-spacing:0.08em;">⚙ Player Settings</h2>
-
-          <div class="field">
-            <span>Timer</span>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <label style="font-size:0.8rem;">
-                <input id="timerEnabled" type="checkbox" checked />
-                Enable timer for each question
+          <div class="panel-grid">
+            <div class="panel-block">
+              <label class="field">
+                <span>Quiz Title</span>
+                <input id="quizTitle" type="text" placeholder="e.g. Class 10 Science Test" />
               </label>
-              <input id="timerSeconds" type="number" min="5" max="300" value="20" style="max-width:80px;" />
-              <span style="font-size:0.75rem; color:#9ca3af;">seconds (default 20)</span>
+
+              <label class="field">
+                <span>Quiz Description</span>
+                <textarea id="quizDescription" rows="2" placeholder="Short description for this quiz..."></textarea>
+              </label>
+
+              <label class="field">
+                <span>Questions (one per line)</span>
+                <p class="help-text">
+                  Format:
+                  <code>Question ? || Option A || Option B || Option C || Option D || correctOptionNumber</code><br />
+                  Example:<br />
+                  <code>What is 2+2? || 3 || 4 || 5 || 6 || 2</code>
+                </p>
+                <textarea id="quizQuestions" rows="10"
+                  placeholder="Capital of India? || Delhi || Mumbai || Chennai || Kolkata || 1&#10;..."></textarea>
+              </label>
+
+              <div class="button-row">
+                <button id="btnNewQuiz" class="ghost-btn small">🧹 New</button>
+                <button id="btnSaveQuiz" class="primary-btn">💾 Save Quiz</button>
+                <button id="btnPreviewQuiz" class="secondary-btn">👁 Preview Player</button>
+              </div>
+
+              <p id="statusBar" class="status-bar">Ready.</p>
             </div>
-          </div>
 
-          <div class="field">
-            <span>Voice (TTS)</span>
-            <label style="font-size:0.8rem;">
-              <input id="ttsEnabled" type="checkbox" checked />
-              Read question aloud (female Tamil voice, if available)
-            </label>
-          </div>
+            <div class="panel-block">
+              <h3>📚 Saved Quizzes</h3>
+              <p class="panel-help small">Click a quiz to load & edit. Data is saved in your browser.</p>
+              <div id="quizList" class="quiz-list">
+                <!-- filled by JS -->
+              </div>
 
-          <div class="field">
-            <span>Sound Effects</span>
-            <select id="soundPack" style="max-width:180px;">
-              <option value="clap-pop" selected>👏 Clap / Pop (recommended)</option>
-              <option value="none">No sound</option>
-            </select>
-          </div>
+              <div class="divider"></div>
 
-          <div class="field">
-            <span>Question / Option Order</span>
-            <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:0.8rem;">
-              <label><input id="shuffleQuestions" type="checkbox" /> Shuffle questions</label>
-              <label><input id="shuffleOptions" type="checkbox" /> Shuffle options</label>
+              <h3>📂 Import / Export Data</h3>
+              <div class="button-row">
+                <button id="btnExportJson" class="secondary-btn small">📤 Export JSON</button>
+                <button id="btnImportJson" class="ghost-btn small">📥 Import JSON</button>
+              </div>
+              <input type="file" id="importFile" accept="application/json" hidden />
             </div>
           </div>
         </section>
 
-        <!-- IMPORT FROM SHEET BUTTON -->
-        <div class="button-row" style="margin-top:0;">
-          <button id="btnSheetImport" class="secondary-btn small">📥 Import from Google Sheet</button>
-        </div>
-
-        <label class="field">
-          <span>Questions (one per line)</span>
-          <p class="help-text">
-            Format: <code>Question ? || Option A || Option B || Option C || Option D || correctOptionNumber</code><br />
-            Example: <br />
-            <code>What is 2+2? || 3 || 4 || 5 || 6 || 2</code>
+        <!-- TAB 2 – DESIGN & THEME -->
+        <section id="tab-design" class="tab-panel">
+          <h2>🎨 Design & Theme</h2>
+          <p class="panel-help">
+            Choose light/dark mode, color presets and background for your exported Leo Quiz player.
           </p>
-          <textarea id="quizQuestions" rows="8"
-            placeholder="Question ? || A || B || C || D || 1&#10;Next question ? || A || B || C || D || 2"></textarea>
-        </label>
 
-        <div class="button-row">
-          <button id="btnNew" class="ghost-btn small">🧹 New</button>
-          <button id="btnSave" class="primary-btn">💾 Save Quiz</button>
-          <button id="btnPreview" class="secondary-btn">👁 Preview</button>
-          <button id="btnExportStandalone" class="secondary-btn">⬇ Export Single HTML</button>
-        </div>
+          <div class="panel-grid">
+            <div class="panel-block">
+              <h3>Theme Mode</h3>
+              <div class="field inline">
+                <label>
+                  <input type="radio" name="themeMode" value="dark" checked />
+                  Dark (default)
+                </label>
+                <label>
+                  <input type="radio" name="themeMode" value="light" />
+                  Light
+                </label>
+              </div>
 
-        <p id="statusBar" class="status-bar">Ready.</p>
-      </section>
+              <h3>Theme Presets</h3>
+              <p class="panel-help small">Pick a style. Colors will be applied inside the player automatically.</p>
 
-      <!-- RIGHT: QUIZ LIST -->
-      <section class="panel panel-list">
-        <h2>📚 Saved Quizzes</h2>
-        <div id="quizList" class="quiz-list">
-          <!-- Filled by ui.js -->
-        </div>
-        <div class="button-row">
-          <button id="btnExport" class="secondary-btn small">📤 Export JSON</button>
-          <button id="btnImport" class="ghost-btn small">📥 Import JSON</button>
-        </div>
-        <input type="file" id="importFile" accept="application/json" hidden />
+              <div class="theme-grid">
+                <label class="theme-chip">
+                  <input type="radio" name="themePreset" value="green-pro" checked />
+                  <span class="theme-color theme-green"></span>
+                  <span>Green Pro</span>
+                </label>
+                <label class="theme-chip">
+                  <input type="radio" name="themePreset" value="blue-modern" />
+                  <span class="theme-color theme-blue"></span>
+                  <span>Blue Modern</span>
+                </label>
+                <label class="theme-chip">
+                  <input type="radio" name="themePreset" value="purple-glow" />
+                  <span class="theme-color theme-purple"></span>
+                  <span>Purple Glow</span>
+                </label>
+                <label class="theme-chip">
+                  <input type="radio" name="themePreset" value="neon-gamer" />
+                  <span class="theme-color theme-neon"></span>
+                  <span>Neon Gamer</span>
+                </label>
+                <label class="theme-chip">
+                  <input type="radio" name="themePreset" value="orange-fire" />
+                  <span class="theme-color theme-orange"></span>
+                  <span>Orange Fire</span>
+                </label>
+                <label class="theme-chip">
+                  <input type="radio" name="themePreset" value="pink-kids" />
+                  <span class="theme-color theme-pink"></span>
+                  <span>Pink Kids</span>
+                </label>
+                <label class="theme-chip">
+                  <input type="radio" name="themePreset" value="cartoon-mint" />
+                  <span class="theme-color theme-mint"></span>
+                  <span>Cartoon Mint</span>
+                </label>
+                <label class="theme-chip">
+                  <input type="radio" name="themePreset" value="steel-dark" />
+                  <span class="theme-color theme-steel"></span>
+                  <span>Steel Dark</span>
+                </label>
+              </div>
+
+              <h3>Background</h3>
+              <p class="panel-help small">Use built-in gradient or your own image (for YouTube recording style).</p>
+              <div class="field">
+                <label>
+                  <input type="radio" name="bgMode" value="gradient" checked />
+                  Use default gradient background
+                </label>
+                <label>
+                  <input type="radio" name="bgMode" value="image" />
+                  Use custom background image URL
+                </label>
+              </div>
+              <label class="field">
+                <span>Background Image URL (optional)</span>
+                <input id="bgImageUrl" type="url" placeholder="https://example.com/image.jpg" />
+              </label>
+
+              <label class="field">
+                <span>App Icon URL (for circle logo – optional)</span>
+                <input id="appIconUrl" type="url" placeholder="https://example.com/icon.png" />
+              </label>
+            </div>
+
+            <div class="panel-block">
+              <h3>Live Preview (simple style)</h3>
+              <p class="panel-help small">Just a rough preview of colors. Real player will look like Leo V6.2 UI.</p>
+
+              <div class="preview-card" id="designPreview">
+                <div class="preview-header">
+                  <div class="preview-logo">🐾</div>
+                  <div class="preview-titles">
+                    <div class="preview-title">Leo Quiz</div>
+                    <div class="preview-sub">Sample question style</div>
+                  </div>
+                  <span class="preview-badge">🦅 PRO</span>
+                </div>
+                <div class="preview-question">
+                  Example question: What is 2 + 2?
+                </div>
+                <div class="preview-options">
+                  <div class="preview-option">A) 3</div>
+                  <div class="preview-option">B) 4</div>
+                  <div class="preview-option">C) 5</div>
+                  <div class="preview-option">D) 22</div>
+                </div>
+                <div class="preview-footer">
+                  <span>Timer • Voice • Sound</span>
+                  <button class="preview-btn">Next →</button>
+                </div>
+              </div>
+
+              <div class="button-row right">
+                <button id="previewBtnDesign" class="secondary-btn small">👁 Preview Player</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3 – EXPORT SETTINGS -->
+        <section id="tab-export" class="tab-panel">
+          <h2>⚙️ Export Settings</h2>
+          <p class="panel-help">
+            Configure how the standalone quiz player behaves. These options will be baked into the exported HTML.
+          </p>
+
+          <div class="panel-grid">
+            <div class="panel-block">
+              <h3>Player Identity</h3>
+
+              <label class="field">
+                <span>Player Title</span>
+                <input id="playerTitle" type="text" value="Leo Quiz"
+                       placeholder="Shown in header & browser tab" />
+              </label>
+
+              <label class="field">
+                <span>Badge Text (right side of title)</span>
+                <input id="badgeText" type="text" value="🦅 PRO"
+                       placeholder="e.g. 🦅 PRO, GK, 100Q, Tamil Test" />
+              </label>
+
+              <label class="field">
+                <span>About Text</span>
+                <textarea id="aboutText" rows="2">Created by 🦅 Eaglesiva</textarea>
+              </label>
+
+              <label class="field">
+                <span>Footer Text (Result screen bottom)</span>
+                <textarea id="footerText" rows="2">Powered by 🦅 Eaglesiva</textarea>
+              </label>
+
+              <h3>Player Behaviour</h3>
+
+              <label class="field">
+                <span>Default Timer Mode</span>
+                <select id="timerDefault">
+                  <option value="off">⏱ Off (no timer)</option>
+                  <option value="10">⏱ 10 seconds</option>
+                  <option value="20">⏱ 20 seconds</option>
+                  <option value="30">⏱ 30 seconds</option>
+                  <option value="nolimit">⏱ ∞ No limit</option>
+                </select>
+              </label>
+
+              <div class="field inline">
+                <label>
+                  <input type="checkbox" id="voiceDefault" checked />
+                  Voice ON by default
+                </label>
+                <label>
+                  <input type="checkbox" id="soundDefault" checked />
+                  Sound ON by default
+                </label>
+                <label>
+                  <input type="checkbox" id="fullscreenDefault" />
+                  Fullscreen ON (try full on start)
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Auto-next delay after answer (ms)</span>
+                <input id="autoNextDelay" type="number" min="400" max="5000" step="100" value="1200" />
+                <p class="help-text small">Recommended: 1200 ms (1.2 seconds)</p>
+              </label>
+            </div>
+
+            <div class="panel-block">
+              <h3>Result Screen Buttons (up to 6)</h3>
+              <p class="panel-help small">
+                Each enabled button will appear on the result screen. If toggle is OFF, that button is hidden.
+              </p>
+
+              <div class="result-buttons-config">
+                <!-- Button 1 -->
+                <div class="result-button-row">
+                  <label class="field inline">
+                    <input type="checkbox" class="result-toggle" data-index="0" />
+                    <span>Button 1 enabled</span>
+                  </label>
+                  <input type="text" class="result-label" data-index="0" placeholder="Button 1 text (e.g. Watch video)" />
+                  <input type="url" class="result-url" data-index="0" placeholder="https://..." />
+                </div>
+
+                <!-- Button 2 -->
+                <div class="result-button-row">
+                  <label class="field inline">
+                    <input type="checkbox" class="result-toggle" data-index="1" />
+                    <span>Button 2 enabled</span>
+                  </label>
+                  <input type="text" class="result-label" data-index="1" placeholder="Button 2 text" />
+                  <input type="url" class="result-url" data-index="1" placeholder="https://..." />
+                </div>
+
+                <!-- Button 3 -->
+                <div class="result-button-row">
+                  <label class="field inline">
+                    <input type="checkbox" class="result-toggle" data-index="2" />
+                    <span>Button 3 enabled</span>
+                  </label>
+                  <input type="text" class="result-label" data-index="2" placeholder="Button 3 text" />
+                  <input type="url" class="result-url" data-index="2" placeholder="https://..." />
+                </div>
+
+                <!-- Button 4 -->
+                <div class="result-button-row">
+                  <label class="field inline">
+                    <input type="checkbox" class="result-toggle" data-index="3" />
+                    <span>Button 4 enabled</span>
+                  </label>
+                  <input type="text" class="result-label" data-index="3" placeholder="Button 4 text" />
+                  <input type="url" class="result-url" data-index="3" placeholder="https://..." />
+                </div>
+
+                <!-- Button 5 -->
+                <div class="result-button-row">
+                  <label class="field inline">
+                    <input type="checkbox" class="result-toggle" data-index="4" />
+                    <span>Button 5 enabled</span>
+                  </label>
+                  <input type="text" class="result-label" data-index="4" placeholder="Button 5 text" />
+                  <input type="url" class="result-url" data-index="4" placeholder="https://..." />
+                </div>
+
+                <!-- Button 6 -->
+                <div class="result-button-row">
+                  <label class="field inline">
+                    <input type="checkbox" class="result-toggle" data-index="5" />
+                    <span>Button 6 enabled</span>
+                  </label>
+                  <input type="text" class="result-label" data-index="5" placeholder="Button 6 text" />
+                  <input type="url" class="result-url" data-index="5" placeholder="https://..." />
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <h3>Preview & Export</h3>
+              <p class="panel-help small">
+                Preview will open a temporary Leo Quiz V6.2 player in a new tab. Export will download the final HTML.
+              </p>
+
+              <div class="button-row">
+                <button id="previewBtnExport" class="secondary-btn">👁 Preview Player</button>
+                <button id="exportBtnMain" class="primary-btn">📤 Export Leo Quiz Player</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </section>
     </main>
   </div>
 
-  <!-- PREVIEW OVERLAY -->
-  <div id="previewOverlay" class="preview-overlay hidden">
-    <div class="preview-dialog">
-      <div class="preview-header">
-        <h2>Quiz Preview</h2>
-        <button id="btnClosePreview" class="ghost-btn small">✖</button>
-      </div>
-      <div id="previewContainer" class="preview-container">
-        <!-- player.js will render quiz here -->
-      </div>
-    </div>
-  </div>
+  <!-- PART-C: JavaScript (logic) will come here -->
+  <script>
+    // Placeholder: real JS logic will be added in PART-C
+    // For now, we just wire basic tab switching so UI is not dead.
 
-  <script src="core.js"></script>
-  <script src="storage.js"></script>
-  <script src="player.js"></script>
-  <script src="ui.js"></script>
+    (function () {
+      const tabButtons = document.querySelectorAll(".tab-button");
+      const tabPanels = document.querySelectorAll(".tab-panel");
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const target = btn.getAttribute("data-tab-target");
+          if (!target) return;
+
+          tabButtons.forEach(b => b.classList.remove("active"));
+          tabPanels.forEach(p => p.classList.remove("active"));
+
+          btn.classList.add("active");
+          const panel = document.querySelector(target);
+          if (panel) panel.classList.add("active");
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
