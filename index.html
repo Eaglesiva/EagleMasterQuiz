@@ -39,20 +39,35 @@
       </div>
     </header>
 
-    <main class="app-main">
+        <main class="app-main">
       <!-- LEFT: QUIZ EDITOR -->
       <section class="panel panel-editor">
         <h2>🛠 Create / Edit Quiz</h2>
 
         <label class="field">
           <span>Quiz Title</span>
-          <input id="quizTitle" type="text" placeholder="e.g. General Knowledge Test" />
+          <input id="quizTitle" type="text" placeholder="e.g. Tamil Grammar Test" />
         </label>
 
         <label class="field">
           <span>Quiz Description</span>
           <textarea id="quizDescription" rows="2" placeholder="Short intro for this quiz..."></textarea>
         </label>
+
+        <!-- 🔹 NEW: Google Sheet ID input -->
+        <label class="field">
+          <span>Google Sheet ID (for this quiz)</span>
+          <input id="sheetId" type="text"
+                 placeholder="Paste Google Sheet ID (the part after /d/ and before /edit)">
+          <p class="help-text">
+            Sheet format: <code>Question | A | B | C | D | Answer (A/B/C/D)</code> – same as your screenshot.
+          </p>
+        </label>
+
+        <!-- 🔹 NEW: Import from Sheet button -->
+        <div class="button-row" style="margin-top: 0;">
+          <button id="btnSheetImport" class="secondary-btn small">📥 Import from Google Sheet</button>
+        </div>
 
         <label class="field">
           <span>Questions (one per line)</span>
@@ -62,19 +77,21 @@
             <code>What is 2+2? || 3 || 4 || 5 || 6 || 2</code>
           </p>
           <textarea id="quizQuestions" rows="8"
-            placeholder="What is 2+2? || 3 || 4 || 5 || 6 || 2&#10;Capital of India? || Delhi || Mumbai || Chennai || Kolkata || 1"></textarea>
+            placeholder="Question ? || A || B || C || D || 1&#10;Next question ? || A || B || C || D || 2"></textarea>
         </label>
 
         <div class="button-row">
           <button id="btnNew" class="ghost-btn small">🧹 New</button>
           <button id="btnSave" class="primary-btn">💾 Save Quiz</button>
           <button id="btnPreview" class="secondary-btn">👁 Preview</button>
+          <!-- 🔹 NEW: Export single-file quiz app -->
+          <button id="btnExportStandalone" class="secondary-btn">⬇ Export Single HTML</button>
         </div>
 
         <p id="statusBar" class="status-bar">Ready.</p>
       </section>
 
-      <!-- RIGHT: QUIZ LIST -->
+      <!-- RIGHT: QUIZ LIST (you can still use this, or ignore if you want 1-sheet = 1-quiz) -->
       <section class="panel panel-list">
         <h2>📚 Saved Quizzes</h2>
         <div id="quizList" class="quiz-list">
@@ -87,6 +104,7 @@
         <input type="file" id="importFile" accept="application/json" hidden />
       </section>
     </main>
+
   </div>
 
   <!-- 🔎 PREVIEW OVERLAY -->
@@ -108,3 +126,4 @@
   <script src="ui.js"></script>
 </body>
 </html>
+
