@@ -1,5 +1,5 @@
 /* ==========================================================
-   LEO QUIZ PLAYER STYLES — V6.3
+   LEO QUIZ PLAYER STYLES â€” V6.3
    Base styles for the quiz player UI (menu, quiz, result screens)
 =========================================================== */
 
@@ -25,7 +25,7 @@ body {
   justify-content: center;
   align-items: center;
   padding: 12px;
-  font-weight: 600; /* slightly bold everywhere */
+  font-weight: 600;
   color: #fff;
   transition: background-color 0.3s, color 0.3s;
 }
@@ -146,7 +146,7 @@ header {
   padding: 10px 0;
 }
 
-/* Options Box (uses flex for consistency but w-full in JS) */
+/* Options Box */
 #optionsBox {
   display: flex;
   flex-direction: column;
@@ -177,17 +177,16 @@ header {
 }
 
 #optionsBox button.bg-green-600 {
-    background-color: var(--accent) !important;
-    color: white;
+  background-color: var(--accent) !important;
+  color: white;
 }
 #optionsBox button.bg-red-600 {
-    background-color: #ef4444 !important;
-    color: white;
+  background-color: #ef4444 !important;
+  color: white;
 }
 #optionsBox button.opacity-50 {
-    opacity: 0.5;
+  opacity: 0.5;
 }
-
 
 /* Menu Screen */
 #screenMenu {
@@ -237,64 +236,4 @@ header {
 }
 
 #resultHeader {
-  margin-bottom: 20px;
-}
-
-#resultHeader h2 {
-  font-size: 2.5rem;
-  font-weight: 900;
-  margin-bottom: 10px;
-}
-
-#finalScore {
-    margin: 30px 0;
-    padding: 20px;
-    background: linear-gradient(145deg, #3f3f46, #27272a);
-    border-radius: 15px;
-    width: 100%;
-    color: white;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-}
-
-#resultActions {
-  margin-top: 20px;
-  width: 100%;
-}
-
-#againBtn, #homeBtn {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 10px;
-  transition: background-color 0.2s, transform 0.1s;
-}
-
-#againBtn {
-  background-color: #3b82f6; /* Blue */
-  color: white;
-  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
-}
-
-#homeBtn {
-  background-color: #d1d5db; /* Light Gray */
-  color: #1f2937;
-}
-body.dark #homeBtn {
-  background-color: #374151; /* Dark Gray */
-  color: #f9fafb;
-}
-
-#againBtn:hover { background-color: #2563eb; }
-#homeBtn:hover { background-color: #9ca3af; }
-body.dark #homeBtn:hover { background-color: #4b5563; }
-
-#againBtn:active, #homeBtn:active { transform: scale(0.99); }
-
-/* Utility for background image text */
-.text-shadow {
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
+  mar
