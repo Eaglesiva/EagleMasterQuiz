@@ -7,6 +7,12 @@
 import { parseQuiz } from "./core.js";
 import { startPlayer } from "./player.js"; // used inside generated preview HTML
 
+// Loads external file text (used for preview.css and player.js)
+async function loadTextFile(path) {
+  const res = await fetch(path);
+  return await res.text();
+}
+
 const STORAGE_KEY = "eagle_quiz_maker_pro_v63";
 
 /* STEP 4: localStorage initialization */
@@ -455,67 +461,72 @@ function buildPlayerDataFromFormAndQuestions() {
   return lastForm;
 }
 
-function generatePlayerBlob() {
+async function generatePlayerBlob() {
   const PREVIEW_DATA = buildPlayerDataFromFormAndQuestions();
   if (!PREVIEW_DATA) return null;
+
+  const css = await loadTextFile("./preview.css");
+  let player = await loadTextFile("./player.js");
+
+  // Convert export-based version to inline version
+  player = player.replace(/export\s+function\s+startPlayer/, "function startPlayer");
 
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>${PREVIEW_DATA.playerTitle}</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<link rel="stylesheet" href="./preview.css">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>${css}</style>
 </head>
 <body>
 <div id="leoApp"></div>
 <script>
-  const PLAYER_DATA = ${JSON.stringify(PREVIEW_DATA)};
-</script>
-<script type="module">
-  import { startPlayer } from "./player.js";
-  startPlayer(PLAYER_DATA);
+const PLAYER_DATA = ${JSON.stringify(PREVIEW_DATA)};${player}
+startPlayer(PLAYER_DATA);
 </script>
 </body>
 </html>
 `;
+
   const blob = new Blob([html], { type: "text/html" });
   return URL.createObjectURL(blob);
 }
 
-function generateFinalHTML() {
+async function generateFinalHTML() {
   const EXPORT_DATA = buildPlayerDataFromFormAndQuestions();
   if (!EXPORT_DATA) return null;
 
-  const html = `
+  const css = await loadTextFile("./preview.css");
+  let player = await loadTextFile("./player.js");
+
+  player = player.replace(/export\s+function\s+startPlayer/, "function startPlayer");
+
+  return `
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>${EXPORT_DATA.playerTitle}</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<link rel="stylesheet" href="./preview.css">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>${css}</style>
 </head>
 <body>
 <div id="leoApp"></div>
 <script>
-  const PLAYER_DATA = ${JSON.stringify(EXPORT_DATA)};
-</script>
-<script type="module">
-  import { startPlayer } from "./player.js";
-  startPlayer(PLAYER_DATA);
+const PLAYER_DATA = ${JSON.stringify(EXPORT_DATA)};${player}
+startPlayer(PLAYER_DATA);
 </script>
 </body>
 </html>
 `;
-  return html;
 }
 
 /* Preview buttons (header + quiz tab) */
 [btnPreviewHeader, btnPreviewQuiz].forEach((btn) => {
   if (!btn) return;
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", async () => {
     const url = generatePlayerBlob();
     if (url) window.open(url, "_blank");
   });
@@ -524,7 +535,7 @@ function generateFinalHTML() {
 /* Export buttons (header + main export) */
 [btnExportHeader, btnExportMain].forEach((btn) => {
   if (!btn) return;
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", async () => {
     const html = generateFinalHTML();
     if (!html) return;
     const blob = new Blob([html], { type: "text/html" });
