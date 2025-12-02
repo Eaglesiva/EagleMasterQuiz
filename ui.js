@@ -7,9 +7,12 @@
 import { parseQuiz } from "./core.js";
 import { startPlayer } from "./player.js"; // used inside generated preview HTML
 
-// Loads external file text (used for preview.css and player.js)
+// Helper: load a text file (CSS / JS) as string at runtime
 async function loadTextFile(path) {
   const res = await fetch(path);
+  if (!res.ok) {
+    throw new Error(`Failed to load ${path}: ${res.status}`);
+  }
   return await res.text();
 }
 
@@ -465,11 +468,12 @@ async function generatePlayerBlob() {
   const PREVIEW_DATA = buildPlayerDataFromFormAndQuestions();
   if (!PREVIEW_DATA) return null;
 
-  const css = await loadTextFile("./preview.css");
-  let player = await loadTextFile("./player.js");
+  // Load CSS and JS text from real files (only inside builder page)
+  const cssText = await loadTextFile("./preview.css");
+  let playerJs = await loadTextFile("./player.js");
 
-  // Convert export-based version to inline version
-  player = player.replace(/export\s+function\s+startPlayer/, "function startPlayer");
+  // Convert ES module export to a normal function for inline use
+  playerJs = playerJs.replace(/export\s+function\s+startPlayer/, "function startPlayer");
 
   const html = `
 <!DOCTYPE html>
@@ -477,13 +481,18 @@ async function generatePlayerBlob() {
 <head>
 <meta charset="UTF-8" />
 <title>${PREVIEW_DATA.playerTitle}</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<style>${css}</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<style>${cssText}
+</style>
 </head>
 <body>
 <div id="leoApp"></div>
 <script>
-const PLAYER_DATA = ${JSON.stringify(PREVIEW_DATA)};${player}
+const PLAYER_DATA = ${JSON.stringify(PREVIEW_DATA)};
+
+// === Inlined player.js code ===${playerJs}
+
+// Start the player
 startPlayer(PLAYER_DATA);
 </script>
 </body>
@@ -498,36 +507,43 @@ async function generateFinalHTML() {
   const EXPORT_DATA = buildPlayerDataFromFormAndQuestions();
   if (!EXPORT_DATA) return null;
 
-  const css = await loadTextFile("./preview.css");
-  let player = await loadTextFile("./player.js");
+  const cssText = await loadTextFile("./preview.css");
+  let playerJs = await loadTextFile("./player.js");
 
-  player = player.replace(/export\s+function\s+startPlayer/, "function startPlayer");
+  playerJs = playerJs.replace(/export\s+function\s+startPlayer/, "function startPlayer");
 
-  return `
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8" />
 <title>${EXPORT_DATA.playerTitle}</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<style>${css}</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<style>${cssText}
+</style>
 </head>
 <body>
 <div id="leoApp"></div>
 <script>
-const PLAYER_DATA = ${JSON.stringify(EXPORT_DATA)};${player}
+const PLAYER_DATA = ${JSON.stringify(EXPORT_DATA)};
+
+// === Inlined player.js code ===${playerJs}
+
+// Start the player
 startPlayer(PLAYER_DATA);
 </script>
 </body>
 </html>
 `;
+
+  return html;
 }
 
 /* Preview buttons (header + quiz tab) */
 [btnPreviewHeader, btnPreviewQuiz].forEach((btn) => {
   if (!btn) return;
   btn.addEventListener("click", async () => {
-    const url = generatePlayerBlob();
+    const url = await generatePlayerBlob();
     if (url) window.open(url, "_blank");
   });
 });
@@ -536,7 +552,7 @@ startPlayer(PLAYER_DATA);
 [btnExportHeader, btnExportMain].forEach((btn) => {
   if (!btn) return;
   btn.addEventListener("click", async () => {
-    const html = generateFinalHTML();
+    const html = await generateFinalHTML();
     if (!html) return;
     const blob = new Blob([html], { type: "text/html" });
     const a = document.createElement("a");
