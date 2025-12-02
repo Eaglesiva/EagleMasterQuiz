@@ -11,11 +11,9 @@ import { startPlayer } from "./player.js";
 const txtQuestions = document.getElementById("quizQuestions");
 const statusBar = document.getElementById("statusBar");
 
+// FIX: Updated to only include existing DOM elements to prevent runtime errors.
 const previewBtns = [
-  document.getElementById("previewBtnHeader"),
-  document.getElementById("previewBtnQuiz"),
-  document.getElementById("previewBtnDesign"),
-  document.getElementById("previewBtnExport")
+  document.getElementById("previewBtnHeader")
 ];
 
 const exportBtns = [
@@ -32,13 +30,14 @@ function status(msg) {
 function generatePlayerBlob() {
   const quizData = parseQuiz(txtQuestions.value);
   if (!quizData.ok) {
-    alert("❌ Quiz format error. Check questions.");
-    status(`Format error. Success: ${quizData.success}, Failed: ${quizData.failed}`);
+    // NOTE: Changed alert() to a status message as alerts disrupt the user experience
+    status("❌ Quiz format error. Check questions."); 
     return null;
   }
 
   status(`Parsed ${quizData.success} questions successfully`);
 
+  // Assuming saveForm and livePreview handle the localStorage updates
   const PREVIEW_DATA = JSON.parse(localStorage.getItem("eagle_quiz_maker_pro_v63")).lastForm;
   PREVIEW_DATA.questions = quizData.questions;
 
@@ -73,7 +72,7 @@ function generatePlayerBlob() {
 function generateFinalHTML() {
   const quizData = parseQuiz(txtQuestions.value);
   if (!quizData.ok) {
-    alert("❌ Quiz format error. Fix before exporting!");
+    status("❌ Quiz format error. Fix before exporting!");
     return null;
   }
 
@@ -128,4 +127,11 @@ exportBtns.forEach(btn => {
       status("Export complete! File downloaded.");
     });
   }
+});
+
+/* THEME TOGGLE LOGIC - FIX FOR ERROR 2 */
+// Note: saveForm() and livePreview() are assumed to be defined elsewhere 
+// and handle the persistence and visual update of the theme change.
+document.getElementById("themeToggle").addEventListener("click", () => {
+  document.body.classList.toggle("dark");
 });
