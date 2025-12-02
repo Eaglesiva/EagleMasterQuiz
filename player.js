@@ -60,7 +60,7 @@ export function startPlayer(PLAYER_DATA) {
     </div>
   `;
 
-  // Now safely destructure data (STEP 2 uses these)
+  // STEP 2: Destructure PLAYER_DATA
   const {
     title,
     badge,
@@ -97,80 +97,91 @@ export function startPlayer(PLAYER_DATA) {
   const elBtns = document.getElementById("resultButtons");
   const elIcon = document.getElementById("pIcon");
   const elFinalScore = document.getElementById("finalScore");
-
   const btnStart = document.getElementById("startBtn");
   const btnPlayAgain = document.getElementById("againBtn");
   const btnHome = document.getElementById("homeBtn");
 
-  /* STATE */
+  // STEP 3: STATE
   let qIndex = 0;
   let score = 0;
-  let timerLeft = timer || 60; // Use timer from data, default to 60 if not set
+  const hasTimer = typeof timer === "number" && timer > 0;
+  let timerLeft = hasTimer ? timer : 60; // 0 = no timer, but we still keep a base value
   let timerInterval = null;
-  let voiceEnabled = voice !== undefined ? voice : true;
-  let soundEnabled = sound !== undefined ? sound : true;
-  let isLocked = false; // Prevents double clicking options
+  let voiceEnabled = (voice !== undefined) ? voice : true;
+  let soundEnabled = (sound !== undefined) ? sound : true;
+  let isLocked = false;
+  const TOTAL_QUESTIONS = Array.isArray(questions) ? questions.length : 0;
+  const autoNextEnabled = !!autoNext;
 
-  const TOTAL_QUESTIONS = questions.length;
+  if (!TOTAL_QUESTIONS) {
+    console.error("Leo Quiz Player: No questions found in PLAYER_DATA.");
+  }
 
-  /* UTILITY FUNCTIONS */
+  /* ==========================================================
+     UTILITY FUNCTIONS
+  ========================================================== */
 
-  // Haptic feedback for interaction
-  function vibrate(duration = 100) {
-    if (navigator.vibrate) {
+  function vibrate(duration = 40) {
+    if (navigator && typeof navigator.vibrate === "function") {
       navigator.vibrate(duration);
     }
   }
 
-  // Audio feedback (expects audio elements in exported player if you add them)
-  function playSound(type) {
+  function playSound(type = "click") {
     if (!soundEnabled) return;
+    // Simple built-in beep using AudioContext (no external files)
     try {
-      const audio = document.getElementById(type + "Sound");
-      if (audio) audio.play();
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      let freq = 440;
+      if (type === "correct") freq = 660;
+      else if (type === "wrong") freq = 220;
+      else if (type === "timeup") freq = 150;
+
+      osc.frequency.value = freq;
+      osc.type = "square";
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.16);
     } catch (e) {
-      console.warn("Could not play sound:", e);
+      // ignore audio errors silently
     }
   }
 
-  // Text-to-Speech
   function speak(text) {
-    if (!voiceEnabled || !window.speechSynthesis) return;
+    if (!voiceEnabled) return;
+    if (!("speechSynthesis" in window)) return;
+
     try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.1;
-      window.speechSynthesis.cancel(); // Stop any current speech
-      window.speechSynthesis.speak(utterance);
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1;
+      utter.pitch = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
     } catch (e) {
-      console.warn("Could not use speech synthesis:", e);
+      // ignore
     }
   }
 
-  /* TIMER LOGIC */
+  /* ==========================================================
+     TIMER LOGIC
+  ========================================================== */
 
   function updateTimerDisplay() {
-    const minutes = Math.floor(timerLeft / 60).toString().padStart(2, "0");
-    const seconds = (timerLeft % 60).toString().padStart(2, "0");
-    elTimer.textContent = `${minutes}:${seconds}`;
-  }
-
-  function startTimer() {
-    if (!timer) {
-      elTimer.style.display = "none";
+    if (!elTimer) return;
+    if (!hasTimer) {
+      elTimer.textContent = "--:--";
       return;
     }
-    elTimer.style.display = "flex";
-    timerLeft = timer; // Reset timer
-    updateTimerDisplay();
-
-    if (timerInterval) clearInterval(timerInterval);
-
-    timerInterval = setInterval(() => (
-      timerLeft--,
-      updateTimerDisplay(),
-      timerLeft <= 5 && (elTimer.classList.add("text-red-500"), vibrate(300)),
-      timerLeft <= 0 && (stopTimer(), selectOption(null, true))
-    ), 1000);
+    const total = Math.max(timerLeft, 0);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    elTimer.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }
 
   function stopTimer() {
@@ -178,252 +189,307 @@ export function startPlayer(PLAYER_DATA) {
       clearInterval(timerInterval);
       timerInterval = null;
     }
-    elTimer.classList.remove("text-red-500");
   }
 
-  /* NAVIGATION & UI */
+  function startTimer() {
+    stopTimer();
+
+    if (!hasTimer) {
+      updateTimerDisplay();
+      return;
+    }
+
+    timerLeft = timer > 0 ? timer : 60;
+    updateTimerDisplay();
+
+    timerInterval = setInterval(() => {
+      timerLeft--;
+      updateTimerDisplay();
+
+      if (timerLeft <= 0) {
+        stopTimer();
+        // Time up: lock and show correct answer
+        selectOption(-1, true);
+      }
+    }, 1000);
+  }
+
+  /* ==========================================================
+     NAVIGATION / RENDER
+  ========================================================== */
 
   function updateProgressBar() {
-    const percent = ((qIndex / TOTAL_QUESTIONS) * 100).toFixed(0);
-    elProgress.style.width = `${percent}%`;
+    if (!elProgress || TOTAL_QUESTIONS === 0) return;
+    const progress = ((qIndex) / TOTAL_QUESTIONS) * 100;
+    elProgress.style.width = `${progress}%`;
   }
 
   function updateScoreDisplay() {
+    if (!elScore) return;
     elScore.textContent = `Score: ${score}`;
   }
 
-  function nextQuestion() {
-    stopTimer();
-    qIndex++;
-    if (qIndex < TOTAL_QUESTIONS) {
-      renderQuestion(questions[qIndex]);
-    } else {
-      showResult();
-    }
-  }
-
-  // STEP 2: Fix property names to match core.js
   function renderQuestion(q) {
-    // Reset state
-    isLocked = false;
+    if (!q || !elQ || !elOpts) return;
+
+    // Question text (NOTE: property is q.q)
+    elQ.textContent = q.q || "";
+
+    // Clear old options
     elOpts.innerHTML = "";
 
-    // Update progress
-    updateProgressBar();
-    updateScoreDisplay();
-
-    // Start timer for new question
-    startTimer();
-
-    // Question text and voice (core.js uses q.q)
-    elQ.textContent = q.q;
-    speak(q.q);
-
-    // Render options (core.js gives plain strings)
-    q.options.forEach((opt, index) => {
-      const optEl = document.createElement("button");
-      optEl.className =
-        "w-full p-3 mb-3 bg-white/10 text-left rounded-lg transition-colors hover:bg-white/20 active:scale-[0.98] transform duration-150 shadow-md backdrop-blur-sm";
-      optEl.textContent = opt; // opt is string now
-      optEl.dataset.index = index;
-      optEl.onclick = () => selectOption(index);
-      elOpts.appendChild(optEl);
+    const opts = q.options || [];
+    opts.forEach((opt, idx) => {
+      const btn = document.createElement("button");
+      // options are plain strings
+      btn.textContent = opt;
+      btn.dataset.index = String(idx);
+      btn.addEventListener("click", () => {
+        selectOption(idx, false);
+      });
+      elOpts.appendChild(btn);
     });
 
-    // Show quiz screen
-    scrMenu.style.display = "none";
-    scrRes.style.display = "none";
-    scrQuiz.style.display = "block";
+    // Voice narration: question + options
+    const voiceText = `${q.q}. Options: ${opts.join(", ")}`;
+    speak(voiceText);
+
+    updateProgressBar();
+    updateScoreDisplay();
+    updateTimerDisplay();
+  }
+
+  function nextQuestion() {
+    qIndex++;
+    if (qIndex >= TOTAL_QUESTIONS) {
+      showResult();
+      return;
+    }
+    isLocked = false;
+    renderQuestion(questions[qIndex]);
+    startTimer();
   }
 
   function selectOption(selectedIndex, isTimeUp = false) {
-    if (isLocked) return;
-    isLocked = true; // Lock controls
-
-    stopTimer(); // Stop the timer immediately
+    if (isLocked || !Array.isArray(questions) || !questions[qIndex]) return;
+    isLocked = true;
+    stopTimer();
 
     const currentQuestion = questions[qIndex];
-    const isCorrect =
-      !isTimeUp && currentQuestion.correctIndex === selectedIndex; // FIXED NAME
-    const options = elOpts.children;
+    // NOTE: property is correctIndex
+    const correctIndex = currentQuestion.correctIndex;
 
-    vibrate(isCorrect ? 50 : 200);
+    const optionButtons = elOpts ? elOpts.querySelectorAll("button") : [];
 
-    // Visually mark correct/incorrect
-    for (let i = 0; i < options.length; i++) {
-      const optEl = options[i];
-      optEl.disabled = true; // Disable all buttons
-      optEl.classList.remove("bg-white/10", "hover:bg-white/20");
+    optionButtons.forEach((btn, idx) => {
+      btn.disabled = true;
+      btn.classList.add("opacity-50");
+      btn.style.cursor = "default";
 
-      if (i === currentQuestion.correctIndex) {
-        // Always highlight the correct answer
-        optEl.classList.add("bg-green-600", "text-white");
-      } else if (i === selectedIndex) {
-        // Highlight the user's incorrect choice
-        optEl.classList.add("bg-red-600", "text-white");
-      } else {
-        // Dim other incorrect choices
-        optEl.classList.add("opacity-50");
+      if (idx === correctIndex) {
+        btn.classList.add("bg-green-600");
+        btn.classList.remove("opacity-50");
       }
-    }
+    });
 
-    if (isCorrect) {
+    if (!isTimeUp && selectedIndex === correctIndex) {
       score++;
+      vibrate(40);
       playSound("correct");
-      speak("Correct!");
+    } else if (isTimeUp) {
+      vibrate(80);
+      playSound("timeup");
     } else {
-      playSound("incorrect");
-      if (isTimeUp) {
-        speak("Time up! The correct answer was...");
-      } else {
-        speak("Incorrect. The correct answer was...");
+      vibrate(80);
+      playSound("wrong");
+      // highlight wrong selection
+      if (selectedIndex >= 0 && optionButtons[selectedIndex]) {
+        optionButtons[selectedIndex].classList.add("bg-red-600");
+        optionButtons[selectedIndex].classList.remove("opacity-50");
       }
     }
 
-    // Move to next question logic
-    if (autoNext) {
-      setTimeout(nextQuestion, 1500); // 1.5 second delay for review
-    } else {
-      // If autoNext is false, show a "Next" button
+    updateScoreDisplay();
+
+    if (autoNextEnabled) {
       setTimeout(() => {
-        const nextBtn = document.createElement("button");
-        nextBtn.textContent = "Next Question";
-        nextBtn.className =
-          "w-full mt-6 p-4 bg-yellow-500 text-white font-bold rounded-lg shadow-xl hover:bg-yellow-600 transition-colors active:scale-[0.99]";
-        nextBtn.onclick = nextQuestion;
-        elOpts.appendChild(nextBtn);
-        isLocked = false; // Allow interaction only for the next button
-      }, 1500);
+        if (qIndex < TOTAL_QUESTIONS - 1) {
+          nextQuestion();
+        } else {
+          showResult();
+        }
+      }, 800);
+    }
+  }
+
+  function showScreen(target) {
+    [scrMenu, scrQuiz, scrRes].forEach((scr) => {
+      if (!scr) return;
+      scr.classList.remove("active");
+    });
+    if (target) {
+      target.classList.add("active");
     }
   }
 
   function showResult() {
     stopTimer();
-
-    // Calculate final percentage
-    const percentage = ((score / TOTAL_QUESTIONS) * 100).toFixed(1);
-
-    // Determine feedback text
-    let feedback = "";
-    if (percentage === "100.0") {
-      feedback = "Perfect Score! Amazing job!";
-    } else if (percentage >= 70) {
-      feedback = "Great work! You scored high!";
-    } else if (percentage >= 50) {
-      feedback = "Good effort. Keep practicing!";
-    } else {
-      feedback = "Time to hit the books. Try again!";
+    if (voiceEnabled) {
+      speak(`Quiz complete. Your score is ${score} out of ${TOTAL_QUESTIONS}.`);
     }
 
-    elFinalScore.innerHTML = `
-      <div class="text-4xl font-extrabold mb-2">${score} / ${TOTAL_QUESTIONS}</div>
-      <div class="text-6xl font-black mb-4 text-yellow-400">${percentage}%</div>
-      <div class="text-xl text-white/80">${feedback}</div>
-    `;
+    showScreen(scrRes);
 
-    // Apply custom buttons if provided
-    if (resultButtons && resultButtons.length > 0) {
-      elBtns.innerHTML = resultButtons
-        .map(
-          (btn) => `
-            <button onclick="window.open('${btn.url}', '_blank')" class="w-full mt-3 p-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors">${btn.text}</button>
-          `
-        )
-        .join("");
-    } else {
+    const percent = TOTAL_QUESTIONS > 0
+      ? Math.round((score / TOTAL_QUESTIONS) * 100)
+      : 0;
+
+    if (elFinalScore) {
+      elFinalScore.innerHTML = `
+        <h3>Your Score</h3>
+        <p style="font-size:2.4rem;font-weight:900;margin:6px 0;">${score} / ${TOTAL_QUESTIONS}</p>
+        <p style="font-size:1.1rem;">${percent}% correct</p>
+      `;
+    }
+
+    // Render result buttons from config
+    if (elBtns) {
       elBtns.innerHTML = "";
+      const btnConfig = Array.isArray(resultButtons) ? resultButtons : [];
+      if (btnConfig.length === 0) {
+        elBtns.style.display = "none";
+      } else {
+        elBtns.style.display = "flex";
+        btnConfig.forEach((cfg) => {
+          if (!cfg || !cfg.text) return;
+          const b = document.createElement("button");
+          b.textContent = cfg.text;
+          b.addEventListener("click", () => {
+            if (cfg.url) {
+              window.open(cfg.url, "_blank");
+            }
+          });
+          elBtns.appendChild(b);
+        });
+      }
     }
-
-    // Show result screen
-    scrMenu.style.display = "none";
-    scrQuiz.style.display = "none";
-    scrRes.style.display = "block";
-
-    // Say final score
-    speak(
-      `You finished the quiz! Your score is ${score} out of ${TOTAL_QUESTIONS}. ${feedback}`
-    );
   }
 
-  /* INITIALIZATION */
-
-  function startQuiz() {
-    // Reset state
-    qIndex = 0;
-    score = 0;
-    elProgress.style.width = "0%";
-
-    // Start with the first question
-    renderQuestion(questions[qIndex]);
-  }
+  /* ==========================================================
+     INIT / RESET / START
+  ========================================================== */
 
   function resetApp() {
-    // Reset progress bar visually
-    elProgress.style.width = "0%";
-
-    // Show menu screen
-    scrQuiz.style.display = "none";
-    scrRes.style.display = "none";
-    scrMenu.style.display = "block";
+    stopTimer();
+    isLocked = false;
+    qIndex = 0;
+    score = 0;
+    updateScoreDisplay();
+    updateProgressBar();
+    updateTimerDisplay();
+    showScreen(scrMenu);
   }
 
-  function init() {
-    /* APPLY UI CONFIG */
-    elTitle.textContent = title;
-    elBadge.textContent = badge;
-    elAbout.innerHTML = about;
-    elFooter.innerHTML = footer;
+  function applyThemeAndConfig() {
+    // Title + Badge + Texts
+    if (elTitle) elTitle.textContent = title || "Leo Quiz";
+    if (elBadge) elBadge.textContent = badge || "";
+    if (elAbout) elAbout.innerHTML = about || "";
+    if (elFooter) elFooter.textContent = footer || "";
 
-    // Apply BG Image
-    if (bgImage) {
-      document.body.style.background = `url('${bgImage}') center/cover no-repeat fixed`;
-      document.body.classList.add("text-shadow");
-    }
-
-    // Apply Icon
-    if (iconUrl && elIcon) {
-      elIcon.style.backgroundImage = `url('${iconUrl}')`;
-      elIcon.style.backgroundSize = "cover";
-      elIcon.style.backgroundPosition = "center";
-    }
-
-    // Apply Theme preset (class on #leoApp)
-    if (themePreset) {
-      app.className = app.className
-        .split(" ")
-        .filter((c) => !c.startsWith("theme-"))
-        .join(" ");
-      app.classList.add(`theme-${themePreset}`);
-    }
-
-    // Apply Theme Mode (for player CSS)
+    // Theme mode (player)
     if (themeMode === "dark") {
       document.body.classList.add("dark");
     } else {
       document.body.classList.remove("dark");
     }
 
-    // Hide timer if not configured
-    if (!timer) {
-      elTimer.style.display = "none";
+    // Theme preset colors (accent)
+    const root = document.documentElement;
+    const preset = themePreset || "green";
+    let accent = "#22c55e";
+    let accentDark = "#16a34a";
+
+    if (preset === "blue") {
+      accent = "#3b82f6";
+      accentDark = "#2563eb";
+    } else if (preset === "purple") {
+      accent = "#a855f7";
+      accentDark = "#7c3aed";
+    } else if (preset === "orange") {
+      accent = "#f97316";
+      accentDark = "#ea580c";
     }
 
-    /* ATTACH EVENT LISTENERS */
-    btnStart.onclick = startQuiz;
-    btnPlayAgain.onclick = startQuiz;
-    btnHome.onclick = resetApp;
+    root.style.setProperty("--accent", accent);
+    root.style.setProperty("--accent-dark", accentDark);
 
-    // Initial view
-    resetApp();
+    // Background image (body)
+    if (bgImage) {
+      document.body.style.backgroundImage = `url("${bgImage}")`;
+      document.body.classList.add("text-shadow");
+    }
 
-    // Check if questions exist
-    if (!questions || questions.length === 0) {
-      elAbout.innerHTML +=
-        '<p class="text-red-400 mt-4">Error: No questions found in quiz data. Please check the `questions` array.</p>';
-      btnStart.disabled = true;
+    // Icon
+    if (elIcon) {
+      if (iconUrl) {
+        elIcon.style.backgroundImage = `url("${iconUrl}")`;
+        elIcon.style.backgroundSize = "cover";
+        elIcon.style.backgroundPosition = "center";
+      }
     }
   }
 
-  // Kick off the initialization
+  function requestFullscreenIfNeeded() {
+    if (!fullscreen) return;
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    }
+  }
+
+  function startQuiz() {
+    if (!TOTAL_QUESTIONS) return;
+    qIndex = 0;
+    score = 0;
+    isLocked = false;
+
+    updateScoreDisplay();
+    updateProgressBar();
+
+    showScreen(scrQuiz);
+    requestFullscreenIfNeeded();
+
+    renderQuestion(questions[qIndex]);
+    startTimer();
+  }
+
+  function init() {
+    applyThemeAndConfig();
+    resetApp();
+
+    if (btnStart) {
+      btnStart.addEventListener("click", () => {
+        playSound("click");
+        startQuiz();
+      });
+    }
+
+    if (btnPlayAgain) {
+      btnPlayAgain.addEventListener("click", () => {
+        vibrate(30);
+        startQuiz();
+      });
+    }
+
+    if (btnHome) {
+      btnHome.addEventListener("click", () => {
+        vibrate(20);
+        resetApp();
+      });
+    }
+  }
+
+  // IMPORTANT: Call init() at the end
   init();
 }
