@@ -15,91 +15,190 @@
 </head>
 <body class="dark">
 
-  <!-- ======================= HEADER ======================= -->
-  <header class="app-header">
-    <div class="app-title-wrap">
-      <div class="logo-circle">🦅</div>
-      <h1 class="app-title">EAGLE Quiz Maker Pro</h1>
-      <span class="app-badge">🦅 PRO</span>
-    </div>
+  <div class="app-shell">
+    <!-- ======================= HEADER ======================= -->
+    <header class="app-header">
+      <div class="app-title-wrap">
+        <div class="logo-circle">🦅</div>
+        <h1 class="app-title">EAGLE Quiz Maker Pro</h1>
+        <span class="app-badge">🦅 PRO</span>
+      </div>
 
-    <div class="header-actions">
-      <button id="themeToggle" class="ghost-btn">☀ / 🌙</button>
-      <button id="previewBtnHeader" class="secondary-btn small">👁 Preview</button>
-      <button id="exportBtnHeader" class="primary-btn small">📤 Export Player</button>
-    </div>
-  </header>
+      <div class="header-actions">
+        <button id="themeToggle" class="ghost-btn">☀ / 🌙</button>
+        <button id="previewBtnHeader" class="secondary-btn small">👁 Preview</button>
+        <button id="exportBtnHeader" class="primary-btn small">📤 Export Player</button>
+      </div>
+    </header>
 
-  <!-- ======================= MAIN BODY ======================= -->
-  <main class="app-main">
-    <aside class="tab-sidebar">
-      <button class="tab-button active" data-tab="#tab-quiz">📝 Quiz Data</button>
-      <button class="tab-button" data-tab="#tab-design">🎨 Design & Theme</button>
-      <button class="tab-button" data-tab="#tab-export">⚙️ Export Settings</button>
-    </aside>
-
-    <section class="tab-panels">
-
-      <!-- TAB 1 -->
-      <section id="tab-quiz" class="tab-panel active">
-        <h2>📝 Quiz Data</h2>
-
-        <label class="field">
-          <span>Quiz Title</span>
-          <input id="quizTitle" type="text" placeholder="e.g. Class 10 Science Test">
-        </label>
-
-        <label class="field">
-          <span>Description</span>
-          <textarea id="quizDescription" rows="2"></textarea>
-        </label>
-
-        <label class="field">
-          <span>Questions (one per line)</span>
-          <p class="help-text">
-            Format: Question ? || A || B || C || D || correctNo  
-            Example: What is 2+2? || 3 || 4 || 5 || 6 || 2
-          </p>
-          <textarea id="quizQuestions" rows="10"></textarea>
-        </label>
-
-        <div class="button-row">
-          <button id="btnNewQuiz" class="ghost-btn small">🧹 New</button>
-          <button id="btnSaveQuiz" class="primary-btn">💾 Save Quiz</button>
-          <button id="btnPreviewQuiz" class="secondary-btn">👁 Preview Player</button>
+    <!-- ======================= MAIN BODY ======================= -->
+    <main class="app-main">
+      <aside class="left-panel">
+        <div class="tabs-nav">
+          <button class="tab-button active" data-tab="#tab-quiz">📝 Quiz Content</button>
+          <button class="tab-button" data-tab="#tab-design">🎨 Design</button>
+          <button class="tab-button" data-tab="#tab-export">⚙️ Export</button>
         </div>
 
-        <p id="statusBar" class="status-bar">Ready.</p>
+        <!-- TAB 1: QUIZ CONTENT -->
+        <section id="tab-quiz" class="tab-panel active">
+          <h2>📝 Questions</h2>
 
-        <h3>📚 Saved Quizzes</h3>
-        <div id="quizList" class="quiz-list"></div>
+          <label class="field">
+            <span>Player Title:</span>
+            <input type="text" id="playerTitle" placeholder="e.g., General Knowledge Quiz" />
+          </label>
 
-        <h3>📂 Import / Export</h3>
-        <div class="button-row">
-          <button id="btnExportJson" class="secondary-btn small">📤 Export JSON</button>
-          <button id="btnImportJson" class="ghost-btn small">📥 Import JSON</button>
-        </div>
-        <input type="file" id="importFile" hidden accept="application/json" />
+          <label class="field">
+            <span>Quiz Timer (seconds):</span>
+            <select id="timer">
+              <option value="0">0 (No Timer)</option>
+              <option value="15">15 Seconds</option>
+              <option value="30">30 Seconds</option>
+              <option value="60">60 Seconds</option>
+              <option value="120">120 Seconds</option>
+            </select>
+          </label>
 
-      </section>
+          <label class="field toggle-field">
+            <span>Auto-Next Question:</span>
+            <input type="checkbox" id="autoNext" />
+            <span class="slider"></span>
+          </label>
 
-      <!-- TAB 2 -->
-      <section id="tab-design" class="tab-panel">
-        <h2>🎨 Design & Theme</h2>
-        <div id="designPanel"></div>
-      </section>
+          <label class="field toggle-field">
+            <span>Voice Narration:</span>
+            <input type="checkbox" id="voice" />
+            <span class="slider"></span>
+          </label>
 
-      <!-- TAB 3 -->
-      <section id="tab-export" class="tab-panel">
-        <h2>⚙️ Export Settings</h2>
-        <div id="exportPanel"></div>
-      </section>
+          <label class="field toggle-field">
+            <span>Sound Effects:</span>
+            <input type="checkbox" id="sound" />
+            <span class="slider"></span>
+          </label>
 
-    </section>
-  </main>
+          <label class="field toggle-field">
+            <span>Fullscreen Mode:</span>
+            <input type="checkbox" id="fullscreen" />
+            <span class="slider"></span>
+          </label>
+          
+          <label class="field">
+            <span>Question List (Text format):</span>
+            <p class="help-text">
+              Enter your questions, one per line. Use `*` to mark the correct answer.
+            </p>
+            <textarea id="quizQuestions" rows="10"></textarea>
+          </label>
 
-  <!-- JS FILES -->
+          <div class="button-row">
+            <button id="btnNewQuiz" class="ghost-btn small">🧹 New</button>
+            <button id="btnSaveQuiz" class="primary-btn">💾 Save Quiz</button>
+            <button id="btnPreviewQuiz" class="secondary-btn">👁 Preview Player</button>
+          </div>
+
+          <p id="statusBar" class="status-bar">Ready.</p>
+
+          <h3>📚 Saved Quizzes</h3>
+          <div id="quizList" class="quiz-list"></div>
+
+          <h3>📂 Import / Export</h3>
+          <div class="button-row">
+            <button id="btnExportJson" class="secondary-btn small">📤 Export JSON</button>
+            <button id="btnImportJson" class="ghost-btn small">📥 Import JSON</button>
+          </div>
+          <input type="file" id="importFile" hidden accept="application/json" />
+
+        </section>
+
+        <!-- TAB 2: DESIGN & THEME -->
+        <section id="tab-design" class="tab-panel">
+          <h2>🎨 Design & Theme</h2>
+          <div id="designPanel">
+            <!-- STEP 6: Design Inputs -->
+            <label class="field">
+              <span>Quiz Title:</span>
+              <input type="text" id="title" placeholder="e.g., Quiz Master" />
+            </label>
+            <label class="field">
+              <span>Badge Text:</span>
+              <input type="text" id="badge" placeholder="e.g., V6.3 PRO" />
+            </label>
+
+            <label class="field">
+              <span>Theme Mode:</span>
+              <select id="themeMode">
+                <option value="dark">Dark Mode</option>
+                <option value="light">Light Mode</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Theme Preset (Color):</span>
+              <select id="themePreset">
+                <option value="green">Green (Default)</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+                <option value="orange">Orange</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>About Text (Menu Screen):</span>
+              <textarea id="about" rows="3" placeholder="Welcome message for the user. HTML is supported."></textarea>
+            </label>
+
+            <label class="field">
+              <span>Footer Text:</span>
+              <input type="text" id="footer" placeholder="e.g., Powered by Leo 🐾" />
+            </label>
+
+            <label class="field">
+              <span>Background Image URL:</span>
+              <input type="url" id="bgImage" placeholder="https://example.com/bg.jpg" />
+            </label>
+
+            <label class="field">
+              <span>App Icon URL:</span>
+              <input type="url" id="iconUrl" placeholder="https://example.com/icon.png" />
+            </label>
+
+            <div class="button-row mt-6">
+                <button id="btnSaveDesign" class="primary-btn">💾 Save Design</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: EXPORT SETTINGS -->
+        <section id="tab-export" class="tab-panel">
+          <h2>⚙️ Export Settings</h2>
+          <div id="exportPanel">
+            <!-- STEP 6: Export Inputs -->
+            <label class="field">
+              <span>Result Buttons (JSON):</span>
+              <p class="help-text">
+                Define custom buttons shown on the result screen.
+                Must be valid JSON array of objects `[{"text": "Text", "url": "URL"}]`.
+              </p>
+              <textarea id="resultButtons" rows="5"></textarea>
+            </label>
+
+            <div class="button-row mt-6">
+                <button id="exportBtnMain" class="primary-btn large">📤 Export Final HTML Player</button>
+            </div>
+          </div>
+        </section>
+
+
+      </aside>
+
+      <div class="right-panel">
+        <iframe id="livePreviewFrame" title="Leo Quiz Player Preview"></iframe>
+      </div>
+    </main>
+  </div>
+
   <script type="module" src="ui.js"></script>
 </body>
 </html>
-
